@@ -290,7 +290,7 @@ $ java -cp ./:$JAVA_HOME/lib/tools.jar AgentLoader
 
 - `-pid=`：必填参数，后接宿主应用的pid，可使用`ps -ef`等命令查看
 
-- `-command=`：必填参数，后接挂载Sermant的命令，支持的指令见[Sermant指令说明](#Sermant指令说明)。
+- `-command=`：必填参数，后接挂载Sermant的命令，支持的指令见[Sermant指令说明](#sermant指令说明)。
 
 - `-nspid=`：当宿主应用容器运行时为必填参数，后接宿主应用的nspid，可使用`cat /proc/{pid}/status`命令查看。当宿主应用非容器运行时，此参数请勿填写
 
