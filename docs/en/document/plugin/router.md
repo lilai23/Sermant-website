@@ -152,6 +152,12 @@ The following metrics can be collected by the route metric collection feature:
 | router_unmatched_request_count   | Number of requests not matching any routing rule                            | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> scope: Source of the metric, server-router: from the routing plugin                                                                                                 |
 | lane_tag_count                   | Number of times the request is tagged based on coloring rules              | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> scope: Source of the metric, server-router: from the routing plugin <br> lane_tag: Coloring mark added to the request after successful rule matching |
 
+### Route Metrics Example
+
+Refer to the [Metrics Service](../user-guide/sermant-agent.md#metric-service) to enable the relevant configurations for metrics collection. The routing plugin can collect the metrics as shown above. This document uses the `router_request_count` metric as an example:
+
+<MyImage src="/docs-img/router_metric.jpg"/>
+
 ## Operation and Result Verification
 
 Take the Spring Cloud scenario as an example to demonstrate the use of tag routing plugins.

@@ -355,6 +355,11 @@ enable-metric: true
 | router_unmatched_request_count      | 未匹配到路由规则的请求次数                 | protocol ：协议，http/dubbo <br>client_service_name：发送请求的服务的名称 <br>scope：scope：指标的来源，server-router：来源于路由插件|
 | lane_tag_count            | 标签染色的次数                |protocol ：协议，http/dubbo <br> client_service_name：发送请求的服务的名称 <br>scope：scope：指标的来源，server-router：来源于路由插件 <br> lane_tag：染色规则匹配成功后，请求带上的染色标记 |
 
+### 路由指标示例
+
+参考[指标服务](../user-guide/sermant-agent.md#指标服务)开启指标采集的相关配置，路由插件可以采集到如上所示的指标，本文以`router_request_count`指标为例：
+
+<MyImage src="/docs-img/router_metric.jpg"/>
 
 ## 操作和结果验证
 
