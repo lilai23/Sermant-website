@@ -413,6 +413,9 @@ The Sermant xDS Service enables microservices to connect to Istio in Kubernetes 
 
 The Sermant Metric Service allows users to collect and display core metrics and custom metrics from Sermant using monitoring tools like Prometheus. Through these metrics, users can gain real-time insights into the health of services and promptly identify potential issues.
 
+#### Sermant Plugins Supporting Metric Service
+- [Router Plugin](../plugin/router.md#route-metric-collection)
+
 #### Prerequisites
 
 Before using the Sermant Metric Service, ensure that the following conditions are met:

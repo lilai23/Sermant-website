@@ -257,7 +257,7 @@ spec:
 
 The Sermant framework layer implements the ability to retrieve flow control configuration based on the xDS protocol. Plugins can call the xDS flow control service interface to obtain the flow control configuration for Kubernetes Services. For detailed development guidance, please refer to [Flow Control Service Development Guide Based on xDS Service](../developer-guide/sermant-xds-service.md#flow-control-service-based-on-xds-protocol).
 
-### Supported Istio Flow Control Configuration Fields
+### Supported Istio Flow Control Configuration Fields and Configuration Template
 
 The Istio flow control configuration includes four types: circuit breaking, retries, fault injection, and rate limiting. Istio can push circuit breaker configurations through a custom resource file of [DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/), retry and fault injection configurations through a custom resource file of [VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/), and rate limiting configurations through a custom resource file of [EnvoyFilter](https://istio.io/v1.23/docs/reference/config/networking/envoy-filter/). Sermant communicates with Istio's control plane protocol based on the xDS protocol to retrieve the flow control configuration. The supported flow control configuration fields are as follows:
 
@@ -487,73 +487,11 @@ spec:
 > 1. Each request that triggers the server's rate-limiting rule has a 50% chance of consuming a token. Based on the token bucket rate-limiting strategy, the token bucket has a maximum capacity of 2 tokens, and 2 tokens are refilled every 90 seconds. Therefore, up to 2 requests that consume tokens are allowed to pass through the rate-limiting rule every 90 seconds. When a request is rate-limited, the server will add `x-local-rate-limit: true` in the response header.
 > 2. The rate-limiting rules apply independently to different instances of the same service and do not affect each other.
 
-### Sermant Plugin Supporting xDS Flow Control Capabilities
+### Sermant Plugins Supporting xDS Flow Control Capabilities
 
 - [Flow Control Plugin](../plugin/flowcontrol.md#flow-control-based-on-xds-protocol)
 
 ## Startup and Result Verification
-
-### Service Discovery Example Based on xDS Service
-
-This tutorial demonstrates the xDS service discovery capabilities of Sermant using the [Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-service-discovery-demo) repository's xds-service-discovery-demo. 
-
-This demo includes a spring-client microservice, a spring-server microservice, and a Sermant example plugin. The plugin intercepts the `hello` method of the spring-client and uses Sermant's xDS service discovery capabilities to get specific instance information of the spring-server service before executing the `hello` method, replacing the input parameter with the correct spring-server address.
-
-#### 1 Preparations
-
-- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-service-discovery-demo-2.2.0.tar.gz) the binary package of the demo.
-- Prepare the Kubernetes environment.
-- Install Istio and start it.
-
-#### 2 Obtaining the Demo Binary Package
-
-Extract the binary package to get the `product/` directory files.
-
-#### 3 Starting the spring-server
-
-Enter the product/spring-server directory:
-
-1. Execute the following command to package the spring-server image:
-
-   ```
-   sh build-server.sh
-   ```
-
-2. Execute the following command to run the spring-server pod and service:
-
-   ```
-   kubectl apply -f spring-server.yaml
-   ```
-
-#### 4 Starting the spring-client
-
-Enter the product/spring-client directory:
-
-1. Execute the following command to package the spring-client image:
-
-   ```
-   sh build-client.sh
-   ```
-
-2. Execute the following command to run the spring-client instance and service:
-
-   ```
-   kubectl apply -f spring-client.yaml
-   ```
-
-#### 5 Verification
-
-Access the spring-client microservice via a web page, set the input parameter `address` to empty, and verify whether Sermant can successfully call the upstream service spring-server:
-
-```
-http://127.0.0.1:30110/hello?address=
-```
-
-The webpage shows the following message, indicating that Sermant successfully discovered the instance of spring-server and modified the `address` parameter to the correct spring-server instance address:
-
-```
-Greetings from http://xxx.xxx.xxx.xxx:8080 : hello, the current time is 2050-01-01T02:08:08.369
-```
 
 ### Routing Example Based on xDS Service
 
@@ -568,7 +506,7 @@ This tutorial demonstrates Sermant's routing capabilities based on xDS service u
 
 #### 2. Obtain the Demo Binary Artifacts
 
-Unzip the demo binary artifact package to get the `router-product/` directory.
+Unzip the demo binary artifact package to get the `product/` directory.
 
 #### 3. Obtain and Move the Sermant Binary Artifacts
 
@@ -577,14 +515,14 @@ Unzip the Sermant binary artifact package to get the `sermant-agent/` directory.
 Run the following command to move the Sermant binary artifacts to the `spring-client` directory for packaging the `spring-client` image:
 
 ```
-cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/router-product/spring-client
+cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/product/spring-client
 ```
 
 > Note: `${sermant-path}` is the path to the Sermant binary artifacts, and `${demo-path}` is the path to the demo binary artifacts.
 
 #### 4. Start `spring-server`
 
-Navigate to the `router-product/spring-server` directory:
+Navigate to the `product/spring-server` directory:
 
 1. Run the following command to package the `spring-server` image:
 
@@ -644,18 +582,18 @@ spring-server version: v1
 
 ### Example of Flow Control Based on xDS Service
 
-This tutorial demonstrates the flow control capability of Sermant based on xDS services using the [Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-router-demo) repository's xds-router-demo. The demo includes `spring-client` and `spring-server` microservices. The `spring-client` microservice mounts the Sermant flow control plugin and enables flow control based on xDS. The Sermant flow control plugin will control traffic according to the flow control rules of upstream services when `spring-client` calls those upstream services.
+This tutorial demonstrates the flow control capability of Sermant based on xDS services using the [Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-demo) repository's xds-demo. The demo includes `spring-client` and `spring-server` microservices. The `spring-client` microservice mounts the Sermant flow control plugin and enables flow control based on xDS. The Sermant flow control plugin will control traffic according to the flow control rules of upstream services when `spring-client` calls those upstream services.
 
 #### 1 Prerequisites
 
-- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-router-demo-2.2.0.tar.gz) the Demo binary package.
+- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-demo-2.2.0.tar.gz) the Demo binary package.
 - [Download](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) the Sermant binary package.
 - [Prepare](https://kubernetes.io/zh-cn/docs/tutorials/hello-minikube/) a Kubernetes environment.
 - Install and start [Istio](https://istio.io/v1.23/docs/setup/getting-started/).
 
 #### 2 Get the Demo Binary Package
 
-Unzip the Demo binary package to get the `router-product/` directory files.
+Unzip the Demo binary package to get the `product/` directory files.
 
 #### 3 Get and Move the Sermant Binary Package
 
@@ -664,14 +602,14 @@ Unzip the Sermant binary package to get the `sermant-agent/` directory files.
 Execute the following command to move the Sermant binary files to the `spring-client` directory for packaging the `spring-client` image:
 
 ```
-cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/router-product/spring-client
+cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/product/spring-client
 ```
 
 > Note: `${sermant-path}` is the path where the Sermant binary package is located, and `${demo-path}` is the path where the Demo binary package is located.
 
 #### 4 Start the Spring Server
 
-Navigate to the `router-product/spring-server` directory:
+Navigate to the `product/spring-server` directory:
 
 1. Run the following command to build the `spring-server` image:
 

@@ -627,6 +627,9 @@ Sermant xDS服务使微服务可以在Kubenetes场景下接入Istio。Sermant基
 
 Sermant指标服务允许用户通过Prometheus等监控工具收集和展示Sermant的核心指标和插件的自定义指标。通过这些指标，用户可以实时了解服务的健康状况，并及时发现潜在问题。
 
+#### 支持指标服务的Sermant插件
+- [路由插件](../plugin/router.md#路由指标采集)
+
 #### 使用前提
 在使用Sermant指标服务之前，请确保以下条件已满足：
 - Sermant已正确集成到应用程序中
