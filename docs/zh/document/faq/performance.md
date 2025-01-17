@@ -233,7 +233,7 @@ Sermant版本：[`Release v1.4.0`](https://github.com/sermant-io/Sermant/release
 
    > 说明：使用 [xds-service-discovery-demo](https://github.com/sermant-io/Sermant-examples/releases/download/v2.0.0/sermant-examples-xds-service-discovery-demo-2.0.0.tar.gz) 作为本次的基准应用进行性能测试
 
-### 第一组测试：基线应用性能对比
+### 第一组测试：基线应用内存对比
 
 #### 部署环境
 
@@ -307,9 +307,9 @@ Sermant版本：[`Release v2.0.0`](https://github.com/sermant-io/Sermant/release
 
 2. Sidecar性能对比：测试Java应用在2000TPS下使用Sermant xDS路由和负载均衡能力或Sidecar（Envoy）相较于基线应用的性能对比，包括Pod的CPU占用、内存和服务调用时延指标。测试场景为spring-client应用查询数据库并调用spring-server应用，spring-client使用Sermant的路由插件实现基于xDS服务的路由和负载均衡能力，采集spring-client应用使用不同Http框架时所在Pod的性能指标。
 
-   > 说明：使用 [xds-router-demo](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-xds-router-demo-2.1.0.tar.gz) 作为本次的基准应用进行性能测试
+   > 说明：使用 [xds-demo](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-demo-2.2.0.tar.gz) 作为本次的基准应用进行性能测试
 
-### 第一组测试：基线应用性能对比
+### 第一组测试：基线应用内存对比
 
 #### 部署环境
 
@@ -324,7 +324,7 @@ Istio Version：v1.17.8
 
 K8s中所有应用Container的规格一致，均为`2vCPUs|4GiB`。
 
-Sermant版本：[`Release v2.1.0`](https://github.com/sermant-io/Sermant/releases/tag/v2.1.0)
+Sermant版本：[`Release v2.2.0`](https://github.com/sermant-io/Sermant/releases/tag/v2.2.0)
 
 #### 测试结果
 
@@ -361,7 +361,7 @@ Istio Version：v1.17.8
 
 K8s中所有应用Container的规格一致，均为`4vCPUs|8GiB`，Envoy 的Container规格为`4vCPUs|8GiB`。
 
-Sermant版本：[`Release v2.1.0`](https://github.com/sermant-io/Sermant/releases/tag/v2.1.0)
+Sermant版本：[`Release v2.2.0`](https://github.com/sermant-io/Sermant/releases/tag/v2.2.0)
 
 #### 测试结果
 
@@ -396,6 +396,103 @@ Sermant版本：[`Release v2.1.0`](https://github.com/sermant-io/Sermant/release
 
 1. 2000TPS下，基线应用挂载Sermant进行服务路由额外CPU占用率增加不超过1.5%，平均调用时延增长不超过0.1ms；使用Envoy，CPU占用率相比基线应用额外增加超过15%，平均调用时延增加1ms以上，资源损耗较大。
 2. 相较于Envoy，Sermant在额外CPU占用率和平均调用时延方面平均下降超90%，性能显著提升。
+
+## xDs流控
+
+**Sermant基于xDS协议的流控能力性能测试分为两组：**
+
+1. 基线应用性能对比：测试Java应用挂载Sermant，静态场景下的内存损耗。
+
+2. Sidecar性能对比：测试Java应用在2000TPS下使用Sermant xDs流控能力或Sidecar（Envoy）相较于基线应用的性能对比，包括Pod的CPU占用、内存和服务调用时延指标。测试场景为spring-client应用查询数据库并调用spring-server应用，spring-client使用Sermant的流控插件实现基于xDS服务的流控能力，采集spring-client应用使用不同Http框架时所在Pod的性能指标。
+
+   > 说明：
+   > 1. 由于触发流控规则时可能会直接返回失败，无法精准测试流控功能对服务调用的影响，因此本次测试虽然下发了流控规则，但测试中不会触发流控规则。
+   > 2. 使用 [xds-router-demo](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-xds-router-demo-2.1.0.tar.gz) 作为本次的基准应用进行性能测试
+
+### 第一组测试：基线应用内存对比
+
+#### 部署环境
+
+本次测试使用华为云容器引擎CCE进行应用部署，K8s集群的ECS节点数量为2个，规格如下：
+
+```
+规格：通用计算增强型｜16vCPUs｜64GiB
+Containeerd Version: v1.7.16
+Kubernetes Version: v1.30.4
+Istio Version：v1.23.3
+```
+
+K8s中所有应用Container的规格一致，均为`4vCPUs|8GiB`。
+
+Sermant版本：[`Release v2.2.0`](https://github.com/sermant-io/Sermant/releases/tag/v2.2.0)
+
+#### 测试结果
+
+**基线测试结果：**
+
+| 测试场景 | 内存总量 | 堆内存总量 | 堆外内存总量 | class总量 |
+| -------- | -------- | ---------- | ------------ | --------- |
+| 基线测试 | 224.14M | 199M       | 25.14       | 8602      |
+
+**对比测试结果：**
+
+| 测试场景             | 内存增加总量 | 堆内存增加 | 堆外内存增加 | class增加量 |
+| -------------------- | ------------ | ---------- | ------------ | ----------- |
+| 挂载Sermant不开启xDS | 16.7M       | -0.3M     | 17M          | 2243        |
+| 挂载Sermant开启xDS流控   | 57.68M        | 1.68M       | 56M          | 4197        |
+
+#### 总结
+
+1. 宿主服务只挂载Sermant，不开启xDS服务时，Sermant框架共增加16.7M内存。其中，堆外内存中增加2243个class对象
+2. 宿主服务挂载Sermant开启xDS服务（包括xDS流控）堆外内存共增加56M，相较于仅挂载Sermant堆外内存增加39M，主要为堆外内存新增1954个class对象，和xDS依赖和grpc依赖相关。我们和主流的无代理服务治理框架进行了参考对比，开启xDS服务时增加的堆外内存属于正常范围。
+
+### 第二组测试：Sidecar性能对比
+
+#### 部署环境
+
+本次测试使用华为云容器引擎CCE进行应用部署，K8s集群的ECS节点数量为2个，规格如下：
+
+```
+规格：通用计算增强型｜16vCPUs｜64GiB
+Containeerd Version: v1.7.16
+Kubernetes Version: v1.30.4
+Istio Version：v1.23.3
+```
+
+K8s中所有应用Container的规格一致，均为`4vCPUs|8GiB`，Envoy 的Container规格为`4vCPUs|8GiB`。
+
+Sermant版本：[`Release v2.2.0`](https://github.com/sermant-io/Sermant/releases/tag/v2.2.0)
+
+#### 测试结果
+
+**基线测试结果：**
+
+| 测试场景：基线            | CPU占用率（总体占用率百分比） | 平均调用时延 | p90  | p99  |
+| ------------------------- | --------- |  ------------ | ---- | ---- |
+| HttpClient                | 54.49%  |  3.61ms      | 4ms  | 6ms |
+| jdkHttp                   | 55.30%  |  3.64ms       | 4ms  | 6ms |
+| OkHttp                    | 51.30%  |  3.48ms      | 4ms  | 6ms |
+
+**对比测试结果：**
+
+| 测试场景：Sermant         | CPU占用率增加 | 平均调用时延增加 | p90增加 | p99增加 |
+| ------------------------- | ----------- |  ---------------- | ------- | ------- |
+| HttpClient                | +1.67%   |  +0.05ms           | +0ms   | +1ms  |
+| jdkHttp                   | +2.34%    |  +0.08ms         | +0ms | +1ms  |
+| OkHttp                    | +1.82%    |  +0.1ms         | +0ms   | +1ms   |
+
+
+| 测试场景：Envoy | CPU占用率增加 | 平均调用时延增加 | p90增加 | p99增加 |
+| --------------- | ------------- | ---------------- | ------- | ------- |
+| HttpClient      | +22.22%        | +1.13ms          | +2ms    | +2ms    |
+| jdkHttp         | +22.26%        | +1.1ms             | +1ms    | +2ms    |
+| OkHttp          | +21.94%        | +1.08ms          | +1ms    | +1ms    |
+
+
+#### 总结
+
+1. 2000TPS下，基线应用挂载Sermant进行流控的额外CPU占用率增加不超过2.4%，平均调用时延增长不超过0.1ms；使用Envoy，CPU占用率相比基线应用额外增加超过20%，平均调用时延增加1ms以上，资源损耗较大。
+2. 相较于Envoy，Sermant在额外CPU占用率和平均调用时延方面平均下降超85%，性能显著提升。
 
 ## 预过滤启动加速机制
 

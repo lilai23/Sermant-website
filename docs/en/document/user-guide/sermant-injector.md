@@ -26,6 +26,10 @@ agent:
   image:
     addr:
     pullPolicy: IfNotPresent
+    
+externalAgent:
+  imageAddr:
+  fileName:
 
 config:
   type: ZOOKEEPER
@@ -41,7 +45,7 @@ configMap:
 
 The parameters are described as follows:
 
-| <span style="display:inline-block;width:100px">Primary Parameter Key</span> | <span style="display:inline-block;width:120px">Second Parameter Key</span> | <span style="display:inline-block;width:100px">Third Parameter Key</span> | Description | <span style="display:inline-block;width:80px">Required</span> |
+| <span style="display:inline-block;width:110px">Primary Parameter Key</span> | <span style="display:inline-block;width:120px">Second Parameter Key</span> | <span style="display:inline-block;width:100px">Third Parameter Key</span> | Description | <span style="display:inline-block;width:80px">Required</span> |
 | ------------ | ------------- | ------------ | ------------------------------------------------------------ | -------- |
 | namespace    | name          | -            | The namespace where the Sermant Injector resides.            | True     |
 | injector     | replicas      | -            | Number of deployed Sermant Injector instances.               | True     |
@@ -50,11 +54,13 @@ The parameters are described as follows:
 |              |               | pullSecrets  | Pull secrets. The default key is default-secret and you can change it on command. | True     |
 | agent        | image         | addr         | The mirror address of Sermant Agent.                         | True     |
 |              |               | pullPolicy   | Sermant Agent image pull strategy: Always(always pull), IfNotPresent(default value, use local mirror if exists), Never(only use local mirror and never pull). | True     |
-| config       | type          | -            | Sermant Agent configuration center types: Currently supports ZooKeeper, Kie, and Nacos. | True     |
-|              | endpoints     | -            | Configuration center address of Sermant Agent.               | True     |
-| registry     | endpoints     | -            | Registration center address of Sermant Agent.                | True     |
-| configMap    | enabled       | -            | General environment variable configuration switch, default is false; set to true to enable. | True     |
-|              | namespaces    | -            | The namespaces to be injected with configMap which must be the same as that of the service application. | True     |
+| externalAgent | imageAddr | - | Image of external agent installed when starting Sermant (needs to be built according to [Parameter Configuration for mirror scripts](#parameter-configuration-for-mirror-scripts)). | False |
+| | fileName | - | File name of the external agent installed when starting Sermant | False |
+| config       | type          | -            | Sermant Agent configuration center types: Currently supports ZooKeeper, Kie, and Nacos. | False |
+|              | endpoints     | -            | Configuration center address of Sermant Agent.               | False |
+| registry     | endpoints     | -            | Registration center address of Sermant Agent.                | False |
+| configMap    | enabled       | -            | General environment variable configuration switch, default is false; set to true to enable. | False |
+|              | namespaces    | -            | The namespaces to be injected with configMap which must be the same as that of the service application. | False |
 |              | env           | custom key1  | You can configure custom value1.                         | False    |
 |              |               | custom key2  | You can configure custom value2.                           | False    |
 
@@ -92,7 +98,7 @@ This ensures that all pods in the default namespace with mounted Sermant are con
 
 | Parameters     | Description                           | Required |
 | -------------- | ------------------------------------- | -------- |
-| sermantVersion | Version of sermant-agent-x.x.x.tar.gz | True     |
+| sermantVersion | Version of sermant-x.x.x.tar.gz       | True     |
 | imageName      | Image name of sermant-agent mirror    | True     |
 | imageVersion   | Image version of sermant-agent mirror | True     |
 
@@ -102,6 +108,15 @@ This ensures that all pods in the default namespace with mounted Sermant are con
 | ------------ | ---------------------------------------- | -------- |
 | imageName    | Image name of Sermant Injector mirror    | True     |
 | imageVersion | Image version of Sermant Injector mirror | True     |
+
+**[build-external-agent-image.sh](https://github.com/sermant-io/Sermant/blob/develop/sermant-injector/images/external-agent/build-external-agent-image.sh)**
+
+| Parameters   | Description                                    | Required |
+| ------------ | ---------------------------------------------- | -------- |
+| imageName    | The name of the built external agent image.    | True     |
+| imageVersion | The version of the built external agent image. | True     |
+
+Note: The [ExternalAgent.Dockerfile](https://github.com/sermant-io/Sermant/blob/develop/sermant-injector/images/external-agent/ExternalAgent.Dockerfile) needs to be modified to include the JAR file of the external agent being used.
 
 ## Version Supported
 
@@ -119,13 +134,13 @@ Before deploying Sermant Injector, you need to build the Sermant Agent image and
 
 #### Prepare Sermant Agent package
 
-Click [here](https://github.com/sermant-io/Sermant/releases) to download latest release package `sermant-agent-x.x.x.tar.gz` or you can package sermant yourself.
+Click [here](https://github.com/sermant-io/Sermant/releases) to download latest release package `sermant-x.x.x.tar.gz` or you can package sermant yourself.
 
 #### Build Image
 
 Modify the values of `sermantVersion`, `imageName`, and `imageVersion` in the `build-sermant-image.sh` script located in the `sermant-injector/images/sermant-agent` folder.
 
-On a Kubernetes node, place `build-sermant-image.sh` and `Sermant.Dockerfile` in the same directory as the release package `sermant-agent-xxx.tar.gz`, then execute the `build-sermant-image.sh` script to complete the creation of the Sermant Agent image.
+On a Kubernetes node, place `build-sermant-image.sh` and `Sermant.Dockerfile` in the same directory as the release package `sermant-x.x.x.tar.gz`, then execute the `build-sermant-image.sh` script to complete the creation of the Sermant Agent image.
 
 ```shell
 sh build-sermant-image.sh
@@ -151,7 +166,29 @@ sh build-injector-image.sh
 
 To push the image to the image repository, run the `docker push ${imageName}:{imageVerison}` command.
 
-### 3 Deploy the Sermant Injector instance
+
+
+### 3. Building External Agent Image (Optional)
+
+#### Prepare the External Agent Package
+
+First, prepare the JAR file of the external agent (along with any additional supporting files if applicable). For example, the OpenTelemetry Agent can be downloaded [here](https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases).
+
+**Create the External Agent Image**
+
+If you want to automatically install an external Agent (e.g., OpenTelemetry Agent) when starting Sermant, refer to the instructions in [Using and Managing External JavaAgent in Sermant](sermant-agent.md) for auto-installation with Sermant Injector, and follow the steps below to build the image.
+
+Modify the imageName and imageVersion values in the build-external-agent-image.sh script located in the sermant-injector/images/external-agent folder.
+
+On a Kubernetes node, place the build-external-agent-image.sh script, the ExternalAgent.Dockerfile, and the external Agent package (e.g., opentelemetry-javaagent.jar) in the same directory. Then execute the build-external-agent-image.sh script to create the image.
+
+```shell
+sh build-external-agent-image.sh
+```
+
+To push the image to the image repository, run the `docker push ${imageName}:{imageVerison}` command.
+
+### 4 Deploy the Sermant Injector instance
 
 Before containerizing and deploying the host application, you need to first deploy the Sermant Injector instance. This project uses Helm for Kubernetes package management, utilizing the `injector` Chart template found in `sermant-injector/deployment/release`.
 
@@ -165,7 +202,7 @@ Check that the Sermant Injector deployment pod status is running.
 
 At this point, the environment configuration work before deploying the host application is complete.
 
-### 4 Deploy Host Application 
+### 5 Deploy Host Application 
 
 #### Automatically mount Sermant
 
@@ -209,7 +246,7 @@ spec:
 
 If the pod cannot be created, please check whether the Sermant Injector is deployed correctly and if the Sermant Agent image is built properly.
 
-### 5 Verification
+### 6 Verification
 
 After the pod is created successfully, execute the following command, where `${pod_name}` is the name of the host application's pod:
 

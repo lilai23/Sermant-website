@@ -306,11 +306,11 @@
 
 ## 基于xDS协议的路由
 
-路由插件基于Sermant框架层的xDS服务获取服务的[路由配置](../user-guide/sermant-xds.md#基于xDS服务的路由能力)、[服务实例](../user-guide/sermant-xds.md#基于xDS服务的服务发现能力)和[负载均衡配置](../user-guide/sermant-xds.md#基于xDS服务的负载均衡能力)实现基于xDS协议的路由（下文简称xDS路由）。用户可以通过Istio的[DestinationRule](https://istio.io/latest/zh/docs/reference/config/networking/destination-rule/)和[VirtualService](https://istio.io/latest/zh/docs/reference/config/networking/virtual-service/)下发路由配置。目前支持通过请求header和路径进行流量路由，支持HttpClient、HttpAsyncClient、OkHttp、HttpURLConnection和Spring Cloud框架。
+路由插件基于Sermant框架层的xDS服务获取服务的[路由配置](../user-guide/sermant-xds.md#基于xDS服务的路由能力)、[服务实例](../user-guide/sermant-xds.md#基于xDS服务的服务发现能力)和[负载均衡配置](../user-guide/sermant-xds.md#基于xDS服务的负载均衡能力)实现基于xDS协议的路由（下文简称xDS路由）。用户可以通过Istio的[DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/)和[VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/)下发路由配置。目前支持通过请求header和路径进行流量路由，支持HttpClient、HttpAsyncClient、OkHttp、HttpURLConnection和Spring Cloud框架。
 
 ### xDS路由使用
 
-使用xDS路由需在Kubenetes环境部署[Istio](https://istio.io/latest/docs/setup/getting-started/)，同时在路由插件的`config/config.yaml`配置文件中开启xDS路由开关：
+使用xDS路由需在Kubenetes环境部署[Istio](https://istio.io/v1.23/docs/setup/getting-started/)，同时在路由插件的`config/config.yaml`配置文件中开启xDS路由开关：
 
 ```
 enabled-xds-route: true
@@ -327,7 +327,7 @@ http客户端调用上游服务的URL格式需要为`http://${serviceName}.${hos
 | SpringCloud       | Edgware.SR2 - 2021.0.0 |
 | HttpClient        | 4.x                    |
 | HttpAsyncClient   | 4.x                    |
-| OkHttp            | 2.2.x+                 |
+| OkHttp            | 2.2.x - 4.x            |
 | HttpURLConnection | 1.8                    |
 
 ## 路由指标采集
@@ -350,10 +350,10 @@ enable-metric: true
 
 | 指标名称             | 说明               |  标签 |
 | - | ---------------------- |----|
-| router_request_count       | 请求次数 | protocol ：协议，http/dubbo <br> client_service_name：发送请求的服务的名称 <br> server_address：接收请求的服务的地址 <br>scope：指标的来源，server-router：来源于路由插件  |
-| router_destination_tag_count        | 根据路由规则路由到目标服务的次数| protocol ：协议，http/dubbo <br> client_service_name：发送请求的服务的名称 <br> service_meta_service：根据service标签匹配到的服务的service标签信息<br> service_meta_version：根据version标签匹配到的服务的version标签信息 <br>service_meta_application：根据application标签匹配到的服务的application标签信息<br>service_meta_zone：根据zone标签匹配到的服务的zone标签信息 <br>service_meta_project：根据project标签匹配到的服务的project标签信息 <br>service_meta_environment：根据environment标签匹配到的服务的environment标签信息  <br>service_meta_parameters：根据用户自定义标签匹配到的服务的自定义标签信息 <br> scope：scope：指标的来源，server-router：来源于路由插件|
-| router_unmatched_request_count      | 未匹配到路由规则的请求次数                 | protocol ：协议，http/dubbo <br>client_service_name：发送请求的服务的名称 <br>scope：scope：指标的来源，server-router：来源于路由插件|
-| lane_tag_count            | 标签染色的次数                |protocol ：协议，http/dubbo <br> client_service_name：发送请求的服务的名称 <br>scope：scope：指标的来源，server-router：来源于路由插件 <br> lane_tag：染色规则匹配成功后，请求带上的染色标记 |
+| router_request_count       | 请求次数 | protocol ：协议，http/dubbo <br> client_service_name：发送请求的服务的名称 <br> server_address：接收请求的服务的地址 <br>scope：指标的来源，service-router：来源于路由插件  |
+| router_destination_tag_count        | 根据路由规则路由到目标服务的次数| protocol ：协议，http/dubbo <br> client_service_name：发送请求的服务的名称 <br> service_meta_service：根据service标签匹配到的服务的service标签信息<br> service_meta_version：根据version标签匹配到的服务的version标签信息 <br>service_meta_application：根据application标签匹配到的服务的application标签信息<br>service_meta_zone：根据zone标签匹配到的服务的zone标签信息 <br>service_meta_project：根据project标签匹配到的服务的project标签信息 <br>service_meta_environment：根据environment标签匹配到的服务的environment标签信息  <br>service_meta_parameters：根据用户自定义标签匹配到的服务的自定义标签信息 <br> scope：scope：指标的来源，service-router：来源于路由插件|
+| router_unmatched_request_count      | 未匹配到路由规则的请求次数                 | protocol ：协议，http/dubbo <br>client_service_name：发送请求的服务的名称 <br>scope：scope：指标的来源，service-router：来源于路由插件|
+| lane_tag_count            | 标签染色的次数                |protocol ：协议，http/dubbo <br> client_service_name：发送请求的服务的名称 <br>scope：scope：指标的来源，service-router：来源于路由插件 <br> lane_tag：染色规则匹配成功后，请求带上的染色标记 |
 
 ### 路由指标示例
 
@@ -367,8 +367,8 @@ enable-metric: true
 
 ### 1 准备工作
 
-- [下载](https://github.com/sermant-io/Sermant/releases/download/v2.1.0/sermant-2.1.0.tar.gz) Sermant Release包（当前版本推荐2.1.0版本）
-- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-router-demo-2.1.0.tar.gz) Demo二进制产物压缩包
+- [下载](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) Sermant Release包（当前版本推荐2.2.0版本）
+- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-router-demo-2.2.0.tar.gz) Demo二进制产物压缩包
 - [下载](https://github.com/apache/servicecomb-service-center) ServiceComb（注册中心），并启动
 - [下载](https://zookeeper.apache.org/releases.html#download) ZooKeeper（动态配置中心），并启动
 
