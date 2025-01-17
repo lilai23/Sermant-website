@@ -254,7 +254,7 @@ spec:
 
 Sermant框架层基于xDS协议实现了流控配置的获取能力，插件可以调用xDS流控服务接口获取Kubenetes Service的流控配置。具体开发指导请参考[基于xDS服务的流控服务开发指导](../developer-guide/sermant-xds-service.md#基于xds协议的流控服务)。
 
-### Istio流控配置字段支持
+### Istio流控配置字段支持和模板
 
 Istio流控配置包含熔断、重试、错误注入、限流四种配置。Istio可以通过下发[DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/)自定义资源文件来下发熔断配置，通过下发[VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/)自定义资源文件来下发重试配置和错误注入配置，通过下发[EnvoyFilter](https://istio.io/v1.23/docs/reference/config/networking/envoy-filter/) 自定义资源文件下发限流配置。Sermant基于xDS协议和Istio的控制平面协议进行通信获取流控配置，具体支持的流控配置字段如下所示：
 
@@ -491,66 +491,6 @@ spec:
 
 ## 启动和结果验证
 
-### 基于xds服务的服务发现示例
-
-本教程使用[Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-service-discovery-demo)仓库中的xds-service-discovery-demo演示Sermant的xDS服务发现能力。本Demo中包括spring-client微服务、spring-server微服务和Sermant示例插件，该插件拦截spring-client的`hello`方法，在`hello`方法执行前通过Sermant的xDS服务发现能力获取spring-server服务的具体实例信息，并替换入参为正确的sprng-server地址。
-
-#### 1 准备工作
-
-- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-service-discovery-demo-2.2.0.tar.gz) Demo二进制产物压缩包
-- [准备](https://kubernetes.io/zh-cn/docs/tutorials/hello-minikube/) Kubenetes环境
-- 安装[Istio](https://istio.io/v1.23/docs/setup/getting-started/)并启动
-
-#### 2 获取Demo二进制产物
-
-解压Demo二进制产物压缩包，即可得到`product/`目录文件。
-
-#### 3 启动spring-server
-
-进入product/spring-server目录：
-
-1. 执行以下命令打包spring-server镜像：
-
-   ```
-   sh build-server.sh
-   ```
-
-2. 执行以下命令运行spring-server Pod和Service
-
-   ```
-   kubectl apply -f spring-server.yaml
-   ```
-
-#### 4 启动spring-client
-
-进入product/spring-client目录：
-
-1. 执行以下命令打包spring-client镜像：
-
-   ```
-   sh build-client.sh
-   ```
-
-2. 执行以下命令运行spring-client Pod和Service
-
-   ```
-   kubectl apply -f spring-client.yaml
-   ```
-
-#### 5 验证
-
-通过网页访问spring-client微服务，入参address设置为空，验证Sermant是否能成功调用上游服务spring-server：
-
-```
-http://127.0.0.1:30110/hello?address=
-```
-
-网页收到如下显示，说明Sermant成功发现了spring-server的实例并修改了入参address为正确的spring-server实例地址：
-
-```
-Greetings from http://xxx.xxx.xxx.xxx:8080 : hello, the current time is 2050-01-01T02:08:08.369
-```
-
 ### 基于xds服务的路由示例
 
 本教程使用[Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-demo)仓库中的xds-demo演示Sermant 基于xDS服务的路由能力。本Demo中包括spring-client微服务、spring-server微服务。spring-client微服务挂载Sermant的路由插件启动，并开启基于xDS的路由能力，Sermant路由插件在spring-client调用上游服务时，根据上游服务的路由规则进行路由，并选择符合规则的服务实例进行调用。
@@ -564,7 +504,7 @@ Greetings from http://xxx.xxx.xxx.xxx:8080 : hello, the current time is 2050-01-
 
 #### 2 获取Demo二进制产物
 
-解压Demo二进制产物压缩包，即可得到`router-product/`目录文件。
+解压Demo二进制产物压缩包，即可得到`product/`目录文件。
 
 #### 3 获取和移动Sermant二进制产物
 
@@ -573,14 +513,14 @@ Greetings from http://xxx.xxx.xxx.xxx:8080 : hello, the current time is 2050-01-
 执行如下命令，将Sermant二进制产物移动至spring-client目录，用于打包spring-client镜像：
 
 ```
-cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/router-product/spring-client
+cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/product/spring-client
 ```
 
 > 说明：${sermant-path}为Sermant二进制产物所在路径，${demo-path}为Demo二进制产物所在路径。
 
 #### 4 启动spring-server
 
-进入router-product/spring-server目录：
+进入product/spring-server目录：
 
 1. 执行以下命令打包spring-server镜像：
 
@@ -641,18 +581,18 @@ spring-server version: v1
 
 ### 基于xds服务的流控示例
 
-本教程使用[Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-router-demo)仓库中的xds-router-demo演示Sermant基于xDS服务的错误注入能力。本Demo中包括spring-client微服务、spring-server微服务。spring-client微服务挂载Sermant的流控插件启动，并开启基于xDS的流控能力，Sermant流控插件在spring-client调用上游服务时，根据上游服务的错误注入规则进行请求中止。
+本教程使用[Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-demo)仓库中的xds-demo演示Sermant基于xDS服务的错误注入能力。本Demo中包括spring-client微服务、spring-server微服务。spring-client微服务挂载Sermant的流控插件启动，并开启基于xDS的流控能力，Sermant流控插件在spring-client调用上游服务时，根据上游服务的错误注入规则进行请求中止。
 
 #### 1 准备工作
 
-- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-router-demo-2.2.0.tar.gz) Demo二进制产物压缩包
+- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-demo-2.2.0.tar.gz) Demo二进制产物压缩包
 - [下载](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) Sermant二进制产物压缩包
 - [准备](https://kubernetes.io/zh-cn/docs/tutorials/hello-minikube/) Kubenetes环境
 - 安装[Istio](https://istio.io/v1.23/docs/setup/getting-started/)并启动
 
 #### 2 获取Demo二进制产物
 
-解压Demo二进制产物压缩包，即可得到`router-product/`目录文件。
+解压Demo二进制产物压缩包，即可得到`product/`目录文件。
 
 #### 3 获取和移动Sermant二进制产物
 
@@ -661,14 +601,14 @@ spring-server version: v1
 执行如下命令，将Sermant二进制产物移动至spring-client目录，用于打包spring-client镜像：
 
 ```
-cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/router-product/spring-client
+cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/product/spring-client
 ```
 
 > 说明：${sermant-path}为Sermant二进制产物所在路径，${demo-path}为Demo二进制产物所在路径。
 
 #### 4 启动spring-server
 
-进入router-product/spring-server目录：
+进入product/spring-server目录：
 
 1. 执行以下命令打包spring-server镜像：
 

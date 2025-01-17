@@ -407,7 +407,7 @@ Sermant版本：[`Release v2.2.0`](https://github.com/sermant-io/Sermant/release
 
    > 说明：
    > 1. 由于触发流控规则时可能会直接返回失败，无法精准测试流控功能对服务调用的影响，因此本次测试虽然下发了流控规则，但测试中不会触发流控规则。
-   > 2. 使用 [xds-router-demo](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-xds-router-demo-2.1.0.tar.gz) 作为本次的基准应用进行性能测试
+   > 2. 使用 [xds-demo](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-demo-2.2.0.tar.gz) 作为本次的基准应用进行性能测试
 
 ### 第一组测试：基线应用内存对比
 
