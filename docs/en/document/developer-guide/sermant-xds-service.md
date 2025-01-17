@@ -118,12 +118,12 @@ Optional<XdsClusterLoadAssigment> getClusterServiceInstance(String clusterName);
 
   | Method Name      | Return Type         | Description                                             |
   | :--------------- | :------------------ | :------------------------------------------------------ |
-  | getClusterName() | String              | Get the Istio cluster name the instance belongs to      |
-  | getServiceName() | String              | Get the Kubernetes service name the instance belongs to |
-  | getHost()        | String              | Get the Pod IP of the instance                          |
-  | getPort()        | int                 | Get the port of the instance                            |
-  | getMetaData()    | Map<String, String> | Get the metadata of the instance                        |
-  | isHealthy()      | boolean             | Check if the service is healthy                         |
+  | getClusterName() | `String`              | Get the Istio cluster name the instance belongs to      |
+  | getServiceName() | `String`             | Get the Kubernetes service name the instance belongs to |
+  | getHost()        | `String`              | Get the Pod IP of the instance                          |
+  | getPort()        | `int`                 | Get the port of the instance                            |
+  | getMetaData()    | `Map<String, String>` | Get the metadata of the instance                        |
+  | isHealthy()      | `boolean`             | Check if the service is healthy                         |
 
 #### Get Service Instances through Cluster
 
@@ -138,19 +138,19 @@ Optional<XdsClusterLoadAssigment> getClusterServiceInstance(String clusterName);
 
   | Field Name        | Field Type                             | Description                                                  |
   | ----------------- | -------------------------------------- | ------------------------------------------------------------ |
-  | serviceName       | String                                 | The name of the service to which the Cluster service instance belongs |
-  | clusterName       | String                                 | The name of the Cluster                                      |
-  | localityInstances | Map<XdsLocality, Set<ServiceInstance>> | The service instances of the Cluster, consisting of service instances from different localities |
+  | serviceName       | `String`                                 | The name of the service to which the Cluster service instance belongs |
+  | clusterName       | `String`                                 | The name of the Cluster                                      |
+  | localityInstances | `Map<XdsLocality, Set<ServiceInstance>>` | The service instances of the Cluster, consisting of service instances from different localities |
 
 - Locality information [XdsLocality](https://github.com/sermant-io/Sermant/blob/develop/sermant-agentcore/sermant-agentcore-core/src/main/java/io/sermant/core/service/xds/entity/XdsLocality.java) has the following fields:
 
   | Field Name        | Field Type | Description           |
   | ----------------- | ---------- | --------------------- |
-  | region            | String     | Region information    |
-  | zone              | String     | Zone information      |
-  | subZone           | String     | Sub-zone information  |
-  | loadBalanceWeight | int        | Load balancing weight |
-  | localityPriority  | int        | Locality priority     |
+  | region            | `String`     | Region information    |
+  | zone              | `String`     | Zone information      |
+  | subZone           | `String`     | Sub-zone information  |
+  | loadBalanceWeight | `int`        | Load balancing weight |
+  | localityPriority  | `int`        | Locality priority     |
 
 ## Route Configuration Service Based on xDS Protocol
 
@@ -188,7 +188,7 @@ This development example is based on the project created in the [Create Your Fir
    agent.service.xds.service.enable=true
    ```
 
-4. After completion, package the Sermant image and the host microservice image. Start the host microservice  in Kubernetes and mount Sermant. For guidance on packaging Sermant and host images and mounting Sermant to start host microservices in Kubernetes, please refer to the [Sermant Injector User Guide](../user-guide/sermant-injector.md#startup-and-result-validation). Use the DestinationRuleand VirtualService rules according to the [Istio Routing Configuration Template](../user-guide/sermant-xds.md#istio-routing-configuration-template) provided by Sermant. 
+4. After completion, package the Sermant image and the host microservice image. Start the host microservice  in Kubernetes and mount Sermant. For guidance on packaging Sermant and host images and mounting Sermant to start host microservices in Kubernetes, please refer to the [Sermant Injector User Guide](../user-guide/sermant-injector.md#startup-and-result-validation). Use the DestinationRule and VirtualService rules according to the [Istio Routing Configuration Template](../user-guide/sermant-xds.md#istio-routing-configuration-template) provided by Sermant. 
 
 5. After the host microservice is successfully started with Sermant mounted, you can execute the following command to fetch the logs of the host microservice and check the number of routing configurations retrieved by the xDS route configuration service:
 
@@ -227,9 +227,9 @@ boolean isLocalityRoute(String clusterName);
 
   | Field Name  | Field Type     | Description                           |
   | ----------- | -------------- | ------------------------------------- |
-  | name        | String         | The name of the route configuration   |
-  | routeMatch  | XdsRouteMatch  | The matching rule for the route       |
-  | routeAction | XdsRouteAction | The routing destination for the match |
+  | name        | `String`         | The name of the route configuration   |
+  | routeMatch  | `XdsRouteMatch`  | The matching rule for the route       |
+  | routeAction | `XdsRouteAction` | The routing destination for the match |
 
 #### Cluster AZ Routing
 
@@ -328,6 +328,187 @@ XdsLbPolicy getBaseLbPolicyOfService(String serviceName);
   ```
   loadBalanceService.getLbPolicyOfCluster("outbound|8080||service-test.default.svc.cluster.local");
   ```
+
+## Flow Control Service Based on xDS Protocol
+
+### Function Introduction
+
+The **Flow Control Service based on the xDS protocol** allows Sermant to connect to the Istio control plane to retrieve flow control configurations for Kubernetes Services.
+
+> Note: To use the Sermant xDS flow control service, the service must be deployed in a Kubernetes container environment running Istio.
+
+### Development Example
+
+This development example is based on the project created in the [Create Your First Plugin](README.md) document, demonstrating how a plugin can use the xDS flow control service provided by the Sermant framework to retrieve flow control rules for a service:
+
+1. In the `io.sermant.template.TemplateDeclarer` class under the `template/template-plugin` directory of the project, add a variable `xdsFlowControlService` to obtain the xDS flow control service provided by the Sermant framework, which is used to retrieve the flow control rules for the service:
+
+   ```java
+   XdsFlowControlService xdsFlowControlService = ServiceManager.getService(XdsCoreService.class).getXdsFlowControlService();
+   ```
+
+2. After obtaining the xDS flow control service, you can call the API provided by `xdsFlowControlService` to retrieve the flow control rules for the service:
+
+   ```java
+   Optional<XdsInstanceCircuitBreakers> circuitBreakersOptional = xdsFlowControlService.getInstanceCircuitBreakers("spring-test", "v1");
+   System.out.println("circuitBreaker : " + circuitBreakersOptional.get().getInterval());
+   ```
+   
+   > Note: `spring-test` must be the name of the Kubernetes Service, and `v1` is the cluster name of the Kubernetes Service. The flow control rules retrieved are issued through Istio's [DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/), [VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/), and [EnvoyFilter](https://istio.io/v1.23/docs/reference/config/networking/envoy-filter/). For the specific flow control rule fields supported by Sermant, the configurable flow control rules, and configuration templates, please refer to the section on [Flow Control Capabilities Based on xDS Service](../user-guide/sermant-xds.md#flow-control-capabilities-based-on-xds-service).
+
+   After development is complete, you can follow the [Packaging and Build](README.md#packaged-build) process from the "Create Your First Plugin" guide. After running **mvn package** in the root directory of the project, the build artifact will be generated.
+
+3. Enable the xDS service and set it in the `agent/config/config.properties` file, with the following example configuration:
+
+   ```
+   # xDS service switch
+   agent.service.xds.service.enable=true
+   ```
+
+4. After execution is completed, package the Sermant image and the host microservice image. Start the host microservice on Kubernetes and mount Sermant. For guidance on packaging the Sermant and host images, as well as starting the host microservice with Sermant mounted in a Kubernetes environment, please refer to the [Sermant Injector User Manual](../user-guide/sermant-injector.md#startup-and-result-validation). Issue the configuration based on the configuration templates in the [Flow Control Configuration Field Support](../user-guide/sermant-xds.md#supported-istio-flow-control-configuration-fields) provided by Sermant.
+
+5. After the host microservice successfully starts with the Sermant-mounted Pod, you can execute the `kubectl logs -f ${POD_NAME}` command to view the logs of the host microservice and check the circuit breaker information retrieved via the xDS flow control service:
+
+   ```log
+   circuitBreaker: 300
+   ```
+
+   > Note: `${POD_NAME}` must be the name of the Pod running the host microservice, which can be viewed using the `kubectl get pod` command.
+
+### xDS Flow Control Service API
+
+**Accessing xDS Flow Control Service:**
+
+```java
+XdsFlowControlService xdsFlowControlService = ServiceManager.getService(XdsCoreService.class).getXdsFlowControlService();
+```
+
+The **xDS Flow Control Service** provides five interface methods, which are used to retrieve rules for request circuit breaking, instance circuit breaking, retry policies, fault injection, and rate limiting:
+
+```java
+Optional<XdsRequestCircuitBreakers> getRequestCircuitBreakers(String serviceName, String clusterName);
+
+Optional<XdsInstanceCircuitBreakers> getInstanceCircuitBreakers(String serviceName, String clusterName);
+
+Optional<XdsRetryPolicy> getRetryPolicy(String serviceName, String routeName);
+
+Optional<XdsRateLimit> getRateLimit(String serviceName, String routeName, String port);
+
+Optional<XdsHttpFault> getHttpFault(String serviceName, String routeName);
+```
+
+#### Getting Request Circuit Breaker Rules
+
+- To retrieve request circuit breaker rules, the return type is `Optional<XdsRequestCircuitBreakers>`.
+
+  ```java
+  xdsFlowControlService.getRequestCircuitBreakers("service-test", "v1");
+  ```
+
+- The request circuit breaker configuration `XdsRequestCircuitBreakers` has the following fields:
+
+| Field Name       | Field Type | Description                         |
+| ---------------- | ---------- | ----------------------------------- |
+| maxRequests      | `int`        | The maximum number of active requests allowed. |
+
+#### Getting Instance Circuit Breaker Rules
+
+- To retrieve instance circuit breaker rules, the return type is `Optional<XdsInstanceCircuitBreakers>`.
+
+  ```java
+  xdsFlowControlService.getInstanceCircuitBreakers("service-test", "v1");
+  ```
+
+- The instance circuit breaker configuration `XdsInstanceCircuitBreakers` has the following fields:
+
+| Field Name                          | Field Type | Description                                                                 |
+| ------------------------------------ | ---------- | --------------------------------------------------------------------------- |
+| splitExternalLocalOriginErrors      | `boolean`    | Whether to distinguish between local and external errors. If set to true, `consecutiveLocalOriginFailures` is used to detect whether the instance failure count exceeds the threshold. |
+| consecutive5xxFailure               | `int`        | The number of 5xx errors that can occur before the instance is circuit-broken. Timeout, connection errors/failures, and request failures are treated as 5xx errors. |
+| consecutiveLocalOriginFailure       | `int`        | The number of local origin errors that can occur before the instance is circuit-broken. |
+| consecutiveGatewayFailure           | `int`        | The number of gateway errors (502, 503, 504 response codes) that can occur before the instance is circuit-broken. |
+| interval                            | `long`       | The detection time interval. If the error count exceeds the threshold within this interval, the instance is circuit-broken. |
+| baseEjectionTime                    | `long`       | The minimum ejection time for an instance. The time an instance remains in a circuit-broken state is equal to the failure count multiplied by the minimum ejection time. |
+| maxEjectionPercent                  | `int`        | The maximum percentage of instances that can be ejected from the pool. |
+| minHealthPercent                    | `double`     | The minimum percentage of healthy instances required. At least this percentage of instances must be healthy for ejection to proceed. |
+
+  > Note: Errors occurring before sending bytes to the server are considered local source errors, while errors occurring after sending bytes to the server are considered external errors.
+
+#### Retrieving Retry Rules
+
+- To retrieve the retry rules, the return value is of type `Optional<XdsRetryPolicy>`.
+
+  ```java
+  xdsFlowControlService.getRetryPolicy("service-test", "v1-routes");
+  ```
+
+- Retry configuration `XdsRetryPolicy`, with the following fields:
+
+  | Field Name        | Field Type       | Description                                |
+  | ----------------- | ---------------- | ------------------------------------------ |
+  | maxAttempts       | `long`             | Maximum number of allowed retry attempts   |
+  | perTryTimeout     | `long`             | Time interval for each retry attempt       |
+  | retryConditions   | `List<String>`    | Retry conditions, supporting 5xx, gateway-error, connect-failure, retriable-4xx, <br> retriable-status-codes, retriable-headers |
+
+#### Retrieving Fault Injection Rules
+
+- To retrieve the fault injection rules, the return value is of type `Optional<XdsHttpFault>`.
+
+  ```java
+  xdsFlowControlService.getHttpFault("service-test", "v1-routes");
+  ```
+
+- Fault injection configuration `XdsHttpFault`, with the following fields:
+
+  | Field Name    | Field Type       | Description                 |
+  | ------------- | ---------------- | --------------------------- |
+  | delay         | `XdsDelay`         | Request delay configuration |
+  | abort         | `XdsAbort`         | Request abort configuration |
+
+- Request delay configuration `XdsDelay`, with the following fields:
+
+  | Field Name        | Field Type           | Description                                                           |
+  | ----------------- | -------------------- | --------------------------------------------------------------------- |
+  | fixedDelay        | `long`                 | Delay time (in milliseconds)                                          |
+  | percentage        | `FractionalPercent`    | Probability of triggering a delay, including numerator (numerator) <br> and denominator (denominator) |
+
+- Request abort configuration `XdsAbort`, with the following fields:
+
+  | Field Name        | Field Type           | Description                                                       |
+  | ----------------- | -------------------- | -------------------------------------------------                 |
+  | httpStatus        | `int`                  | HTTP status code returned when aborting the request               |
+  | percentage        | `FractionalPercent`    | Probability of triggering a request abort, including numerator <br> and denominator |
+
+#### Retrieving Rate Limiting Rules
+
+- To retrieve the rate-limiting rules, the return value is of type `Optional<XdsRateLimit>`.
+
+  ```java
+  xdsFlowControlService.getRateLimit("service-test", "v1-routes", "8003");
+  ```
+
+- Rate-limiting configuration `XdsRateLimit`, with the following fields:
+
+  | Field Name               | Field Type           | Description                                                   |
+  | ------------------------ | -------------------- | ------------------------------------------------------------- |
+  | tokenBucket              | `XdsTokenBucket`       | Token bucket configuration                                    |
+  | responseHeaderOption     | `List<XdsHeaderOption>` | Configuration of response header operations                    |
+  | percent                  | `FractionalPercent`    | Probability of triggering rate-limiting, including numerator <br> and denominator |
+
+- Token bucket configuration `XdsTokenBucket`, with the following fields:
+
+  | Field Name        | Field Type  | Description                                   |
+  | ----------------- | ----------- | --------------------------------------------- |
+  | maxTokens         | `int`         | Maximum number of tokens in the bucket       |
+  | tokensPerFill     | `int`         | Number of tokens added per fill operation    |
+  | fillInterval      | `long`        | Time interval between token refills (in ms)  |
+
+- Response header operation configuration `XdsHeaderOption`, with the following fields:
+
+  | Field Name        | Field Type       | Description                                                 |
+  | ----------------- | ---------------- | ----------------------------------------------------------- |
+  | header            | `XdsHeader`        | Response header information, containing `key`: header name, `value`: header value |
+  | enabledAppend     | `boolean`          | Whether to append to the response header. If `true`, and the header already exists, append the new value to the existing value; <br> if `false`, or the header does not exist, it will be added as a new header. |
 
 ## xDS Service Configuration
 

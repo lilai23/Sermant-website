@@ -2,7 +2,7 @@
 
 ## Feature Introduction
 
-Sermant Backend consists of the Sermant data processing backend module and the frontend information display module, aiming to provide Sermant with runtime management capabilities and observability. It mainly includes functions such as displaying Sermant Agent heartbeat information, receiving and displaying reported events, webhook notifications, configuration management, and hot-swappable services.
+Sermant Backend consists of the Sermant data processing backend module and the frontend information display module, aiming to provide Sermant with runtime management capabilities and observability. It mainly includes functions such as displaying Sermant Agent heartbeat information, receiving and displaying reported events, webhook notifications, configuration management, and hot-plugging services.
 
 ### Instance Status Display Service
 
@@ -16,9 +16,9 @@ Upon startup, Sermant Agent, functioning as a data sender, not only sends the cu
 
 Sermant Backend collaborates with the configuration center to manage all configuration items. It allows viewing, adding, modifying, and deleting configuration items on the page. For the actual page layout, refer to [Configuration Management Validation](#_6-configuration-management-verification).
 
-### Hot-swappable Service
+### Hot-Plugging Service
 
-When used in conjunction with Sermant Agent, Sermant Backend can also function as a server for hot-swappable operations, listening to hot-swappable instructions from Sermant Backend and performing plugin installation, uninstallation, and upgrade operations. For the actual page layout, refer to [Hot-swappable Service Validation](#_7-hot-plug-service-verification).
+When used in conjunction with Sermant Agent, Sermant Backend can also function as a server for hot-plugging operations, listening to hot-plugging instructions from Sermant Backend and performing plugin installation, uninstallation, upgrade operations and external agent installation. For the actual page layout, refer to [Hot-plugging Service Validation](#_7-hot-plugging-service-verification).
 
 > Note: The Sermant Backend is a **non-essential component**, and users can deploy it as needed.
 
@@ -30,10 +30,10 @@ The instance status management and event management capabilities provided by the
 
 |**Parameter key** | **Description** | **Default value** | **Required**|
 | ------------------ | ------------------------------------ | ---------- | ------------ |
-| agent.service.heartbeat.enable              | Heartbeat service switch              | false         | Must be enabled when using Sermant Backend's hot-swappable service |
-| agent.service.gateway.enable                | Gateway service switch                | false         | Must be enabled when using heartbeat service, event reporting, or Sermant Backend's hot-swappable service |
-| agent.service.dynamic.config.enable         | Dynamic configuration switch          | false         | Must be enabled when using Sermant Backend's hot-swappable service |
-| agent.service.hot.plugging.service.enable                | Hot-swappable service switch           | false         | Must be enabled when using Sermant Backend's hot-swappable service |
+| agent.service.heartbeat.enable              | Heartbeat service switch              | false         | Must be enabled when using Sermant Backend's hot-plugging service |
+| agent.service.gateway.enable                | Gateway service switch                | false         | Must be enabled when using heartbeat service, event reporting, or Sermant Backend's hot-plugging service |
+| agent.service.dynamic.config.enable         | Dynamic configuration switch          | false         | Must be enabled when using Sermant Backend's hot-plugging service |
+| agent.service.hot.plugging.service.enable                | Hot-plugging service switch         | false         | Must be enabled when using Sermant Backend's hot-plugging service |
 | gateway.nettyIp        | Specify the IP address of Netty server                    | 127.0.0.1  | False           |
 | gateway.nettyPort        | Specify the port of Netty server                    | 6888  | False           |
 |event.enable | Event reporting switch | false | False|
@@ -102,8 +102,8 @@ Sermant Backend is developed using JDK 1.8, so the running environment requires 
 
 ### 1 Preparation
 
-- [Download](https://github.com/sermant-io/Sermant/releases/download/v2.1.0/sermant-2.1.0.tar.gz) Sermant
-  Release package (current version recommends version 2.1.0)
+- [Download](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) Sermant
+  Release package (current version recommends version 2.2.0)
 - [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v1.4.0/sermant-examples-springboot-registry-demo-1.4.0.tar.gz) Demo binary product Archive
 - [Download](https://zookeeper.apache.org/releases.html#download)ZooKeeper (dynamic configuration center & registration center), and start
 
@@ -181,13 +181,13 @@ By clicking the Observe button in the event management tab, you can view the eve
 #### 5.1 Verification event query
 
 **5.1.1 Report time query**
-  
+
   On the **Event Management -> Monitoring** page, set the query event time range at the red box in the figure below, and click the query button to query.
 
   <MyImage src="/docs-img/backend/en/backend-event-query-time.png"></MyImage>
 
 **5.1.2 Service name query**
-  
+
   On the **Event Management -> Monitoring** page, set the position of the red box in the figure below to query by service name, enter the service name to be queried (single or multiple service name queries are supported), and click the query button to query
 
   <MyImage src="/docs-img/backend/en/backend-event-query-service-1.png"></MyImage>
@@ -195,7 +195,7 @@ By clicking the Observe button in the event management tab, you can view the eve
   <MyImage src="/docs-img/backend/en/backend-event-query-service-2.png"></MyImage>
 
 **5.1.3 ip query**
-  
+
   On the **Event Management -> Monitoring** page, set the position of the red box in the figure below to query by ip, enter the IP address to be queried (single or multiple ip queries are supported), and click the query button to query
 
   <MyImage src="/docs-img/backend/en/backend-event-query-ip-1.png"></MyImage>
@@ -203,25 +203,25 @@ By clicking the Observe button in the event management tab, you can view the eve
   <MyImage src="/docs-img/backend/en/backend-event-query-ip-2.png"></MyImage>
 
 **5.1.4 Level Query**
-  
+
   On the **Event Management -> Monitoring** page, select the event level that needs to be queried in the red box in the figure below. Multiple selections are supported. After selecting, click Filter to query.
 
   <MyImage src="/docs-img/backend/en/backend-event-query-level.png "></MyImage>
 
 **5.1.5 Type Query**
-  
+
   On the **Event Management -> Monitoring** page, select the event type that needs to be queried at the red box in the figure below. Multiple selections are supported. After selecting, click Filter to query.
 
   <MyImage src="/docs-img/backend/en/backend-event-query-type.png"></MyImage>
 
 **5.1.6 Detailed information display**
-  
+
   On the **Event Management -> Monitoring** page, click on the red box in the image below to view event details
 
   <MyImage src="/docs-img/backend/en/backend-event-detail.png"></MyImage>
 
 **5.1.7 Events automatically refreshed**
-  
+
   On the **Event Management -> Monitoring** page, click the red box auto-refresh button in the picture below to enable automatic event refresh.(After turning it on, the latest events will be automatically obtained regularly. Click the button again to close it, or it will automatically close when viewing the event list.)
 
   <MyImage src="/docs-img/backend/en/backend-event-auto.png"></MyImage>
@@ -301,7 +301,7 @@ By clicking the Observe button in the event management tab, you can view the eve
 
 <MyImage src="/docs-img/backend/en/backend-config-delete-2.png"></MyImage>
 
-### 7 Hot Plug Service Verification
+### 7 Hot-Plugging Service Verification
 
 Access the instance status page at `http://127.0.0.1:8900/`. From the instance status page, you can perform hot plug services on the dynamically mounted Sermant Agent.
 
@@ -319,38 +319,46 @@ Access the instance status page at `http://127.0.0.1:8900/`. From the instance s
 
 > Note: Before dynamically installing a plugin, ensure that the plugin JAR file is located in `${path}/sermant-agent-x.x.x/pluginPackage/${pluginName}`. `${path}` is the actual installation path of Sermant, `x.x.x` represents a specific version number of Sermant, and `${pluginName}` is the name of the plugin.
 
-- Due to the periodic nature of heartbeat reporting, plugin information does not refresh immediately. You must wait for the latest heartbeat information to be reported before viewing the most up-to-date plugin information.
+- Due to the time interval of heartbeat and event reporting, plugin information and events are not updated immediately. You can view the latest information after the next heartbeat or event report.
 
 <MyImage src="/docs-img/backend/en/plugin-install-4.png"></MyImage>
+
+<MyImage src="/docs-img/backend/en/plugin-install-5.png"></MyImage>
 
 #### 7.2 Plugin Upgrade
 
 - In the instance status page, select the instance to execute the hot plug service, and click the `Hot Plugging` button.
 
-<MyImage src="/docs-img/backend/en/plugin-install-2.png"></MyImage>
+<MyImage src="/docs-img/backend/en/plugin-update-1.png"></MyImage>
 
 - Choose the `Update Plugin` service, enter the plugin name, and click the `Confirm` button to update the plugin.
 
-<MyImage src="/docs-img/backend/en/plugin-update-1.png"></MyImage>
+<MyImage src="/docs-img/backend/en/plugin-update-2.png"></MyImage>
 
 > Note: Before dynamically updating a plugin, ensure that the plugin JAR file has been updated.
 
-- Because event reporting occurs at intervals, event information does not refresh immediately. You need to wait for the latest event information to be reported before you can view the event information related to plugin updates.
-
-<MyImage src="/docs-img/backend/en/plugin-update-2.png"></MyImage>
+- Due to the time interval of heartbeat and event reporting, plugin information and events are not updated immediately. You can view the latest information after the next heartbeat or event report.
 
 <MyImage src="/docs-img/backend/en/plugin-update-3.png"></MyImage>
+
+<MyImage src="/docs-img/backend/en/plugin-update-4.png"></MyImage>
 
 #### 7.3 Plugin Uninstallation
 
 - In the instance status page, select the instance to execute the hot plug service, and click the `Hot Pluggging` button.
 
-<MyImage src="/docs-img/backend/en/plugin-install-2.png"></MyImage>
+<MyImage src="/docs-img/backend/en/plugin-uninstall-1.png"></MyImage>
 
 - Choose the `Uninstall Plugin` service, enter the plugin name, and click the `Confirm` button to proceed with the uninstallation.
 
-<MyImage src="/docs-img/backend/en/plugin-unInstall-1.png"></MyImage>
+<MyImage src="/docs-img/backend/en/plugin-uninstall-2.png"></MyImage>
 
-- Due to the periodic nature of heartbeat reporting, plugin information does not refresh immediately. You must wait for the latest heartbeat information to be reported before viewing the most up-to-date plugin information.
+- Due to the time interval of heartbeat and event reporting, plugin information and events are not updated immediately. You can view the latest information after the next heartbeat or event report.
 
-<MyImage src="/docs-img/backend/en/plugin-unInstall-2.png"></MyImage>
+<MyImage src="/docs-img/backend/en/plugin-uninstall-3.png"></MyImage>
+
+<MyImage src="/docs-img/backend/en/plugin-uninstall-4.png"></MyImage>
+
+#### 7.4 External Agent Installation
+
+Refer to [Using and Managing External JavaAgent in Sermant](sermant-agent.md).

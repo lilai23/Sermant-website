@@ -103,11 +103,11 @@ The content is the specific routing rule.
 
 ## Routing based on the xDS protocol
 
-The routing plugin obtains service [routing configurations](../user-guide/sermant-xds.md#routing-based-on-xds-service), [service instances](../user-guide/sermant-xds.md#service-discovery-based-on-xds=service), and [load balancing configurations](../user-guide/sermant-xds.md#load-balancing-based-on-xds=service) from the xDS service at the Sermant framework layer to implement routing based on the xDS protocol (hereinafter referred to as xDS routing). Users can configure routing rules via Istio's [DestinationRule](https://istio.io/latest/zh/docs/reference/config/networking/destination-rule/) and [VirtualService](https://istio.io/latest/zh/docs/reference/config/networking/virtual-service/). Currently, traffic can be routed based on request headers and paths, and it supports frameworks like HttpClient, HttpAsyncClient, OkHttp, HttpURLConnection, and Spring Cloud.
+The routing plugin obtains service [routing configurations](../user-guide/sermant-xds.md#routing-based-on-xds-service), [service instances](../user-guide/sermant-xds.md#service-discovery-based-on-xds=service), and [load balancing configurations](../user-guide/sermant-xds.md#load-balancing-based-on-xds=service) from the xDS service at the Sermant framework layer to implement routing based on the xDS protocol (hereinafter referred to as xDS routing). Users can configure routing rules via Istio's [DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/) and [VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/). Currently, traffic can be routed based on request headers and paths, and it supports frameworks like HttpClient, HttpAsyncClient, OkHttp, HttpURLConnection, and Spring Cloud.
 
 ### Using xDS Routing
 
-To use xDS routing, you need to deploy [Istio](https://istio.io/latest/docs/setup/getting-started/) in a Kubernetes environment，and activate the xDS routing option in the routing plugin's `config/config.yaml` file:
+To use xDS routing, you need to deploy [Istio](https://istio.io/v1.23/docs/setup/getting-started/) in a Kubernetes environment，and activate the xDS routing option in the routing plugin's `config/config.yaml` file:
 
 ```
 enabled-xds-route: true
@@ -124,7 +124,7 @@ The format for upstream service calls through HTTP clients should be `http://${s
 | SpringCloud       | Edgware.SR2 - 2021.0.0 |
 | HttpClient        | 4.x                    |
 | HttpAsyncClient   | 4.x                    |
-| OkHttp            | 2.2.x+                 |
+| OkHttp            | 2.2.x - 4.x                 |
 | HttpURLConnection | 1.8                    |
 
 ## Route Metric Collection
@@ -147,10 +147,10 @@ The following metrics can be collected by the route metric collection feature:
 
 | Metric Name                     | Description                               | Tags |
 |----------------------------------|-------------------------------------------|------|
-| router_request_count             | Number of requests                                                          | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> server_address: Address of the service receiving the request <br> scope: Source of the metric, server-router: from the routing plugin               |
-| router_destination_tag_count     | Number of times routed to the target service based on routing rules          | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> service_meta_service: Service label information matched based on the service label <br> service_meta_version: Service version label information matched based on version label <br> service_meta_application: Service application label information matched based on application label <br> service_meta_zone: Service zone label information matched based on zone label <br> service_meta_project: Service project label information matched based on project label <br> service_meta_environment: Service environment label information matched based on environment label <br> service_meta_parameters: Custom label information matched based on user-defined labels <br> scope: Source of the metric, server-router: from the routing plugin |
-| router_unmatched_request_count   | Number of requests not matching any routing rule                            | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> scope: Source of the metric, server-router: from the routing plugin                                                                                                 |
-| lane_tag_count                   | Number of times the request is tagged based on coloring rules              | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> scope: Source of the metric, server-router: from the routing plugin <br> lane_tag: Coloring mark added to the request after successful rule matching |
+| router_request_count             | Number of requests                                                          | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> server_address: Address of the service receiving the request <br> scope: Source of the metric, service-router: from the routing plugin               |
+| router_destination_tag_count     | Number of times routed to the target service based on routing rules          | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> service_meta_service: Service label information matched based on the service label <br> service_meta_version: Service version label information matched based on version label <br> service_meta_application: Service application label information matched based on application label <br> service_meta_zone: Service zone label information matched based on zone label <br> service_meta_project: Service project label information matched based on project label <br> service_meta_environment: Service environment label information matched based on environment label <br> service_meta_parameters: Custom label information matched based on user-defined labels <br> scope: Source of the metric, service-router: from the routing plugin |
+| router_unmatched_request_count   | Number of requests not matching any routing rule                            | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> scope: Source of the metric, service-router: from the routing plugin                                                                                                 |
+| lane_tag_count                   | Number of times the request is tagged based on coloring rules              | protocol: protocol, http/dubbo <br> client_service_name: Name of the service sending the request <br> scope: Source of the metric, service-router: from the routing plugin <br> lane_tag: Coloring mark added to the request after successful rule matching |
 
 ### Route Metrics Example
 
@@ -164,8 +164,8 @@ Take the Spring Cloud scenario as an example to demonstrate the use of tag routi
 
 ### Preparations
 
-- [Download](https://github.com/sermant-io/Sermant/releases/download/v2.1.0/sermant-2.1.0.tar.gz) Sermant Release package (current recommended version is 2.1.0)
-- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-router-demo-2.1.0.tar.gz) Demo binary artifact package
+- [Download](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) Sermant Release package (current recommended version is 2.2.0)
+- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-router-demo-2.2.0.tar.gz) Demo binary artifact package
 - [Download](https://github.com/apache/servicecomb-service-center) ServiceComb (registry center), and start it
 - [Download](https://zookeeper.apache.org/releases.html#download) ZooKeeper (dynamic configuration center), and start it
 

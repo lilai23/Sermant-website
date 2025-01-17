@@ -12,6 +12,20 @@ The Sermant xDS service allows microservices to integrate with Istio in a Kubern
 
 Sermant is a cloud-native, proxyless service mesh based on a Java Agent. Microservices run Sermant in the same process, eliminating the need to start additional sidecar containers for network proxying. This significantly reduces application performance overhead and call latency between services.
 
+## Supported Versions and Limitations
+
+### Version Support
+
+Istio Versions (Verified Support): 1.6 - 1.23
+
+xDS Version: v3
+
+For the compatibility between Kubernetes versions and Istio versions, please refer to the [Istio Version Support](https://istio.io/v1.23/docs/releases/supported-releases/#support-status-of-istio-releases).
+
+### Limitations
+
+Sermant is a cloud-native, agentless service mesh based on the Java Agent, and it only supports the Java programming language.
+
 ### Istio+Sermant Sidecar Proxyless Mode Deployment
 
 <MyImage src="/docs-img/xds-deploy-en.jpg" />
@@ -79,7 +93,7 @@ spec:
 
 ### Sermant Plugins Supportting xDS Service Discovery
 
-- [Router Plugin](../plugin/router.md#routing-based-on-the-xds-protocol)
+- [Router Plugin](../plugin/router.md#routing-based-on-the-xds-protocol)、[Flow Control Plugin](../plugin/flowcontrol.md#flow-control-based-on-xds-protocol)
 
 ## Routing based on xDS Service
 
@@ -189,7 +203,7 @@ In the future, the Sermant framework will implement routing configuration retrie
 
 ### Sermant Plugins Supportting xDS Routing Service
 
-- [Router Plugin](../plugin/router.md#routing-based-on-the-xds-protocol)
+- [Router Plugin](../plugin/router.md#routing-based-on-the-xds-protocol)、[Flow Control Plugin](../plugin/flowcontrol.md#flow-control-based-on-xds-protocol)
 
 ## Load Balancing based on xDS Service
 
@@ -236,7 +250,246 @@ spec:
 
 ### Sermant Plugins Supporting xDS Load Balancing Service
 
-- [Routing Plugin](../plugin/router.md#routing-based-on-the-xds-protocol)
+- [Routing Plugin](../plugin/router.md#routing-based-on-the-xds-protocol)、[Flow Control Plugin](../plugin/flowcontrol.md#flow-control-based-on-xds-protocol)
+
+
+## Flow Control Capabilities Based on xDS Service
+
+The Sermant framework layer implements the ability to retrieve flow control configuration based on the xDS protocol. Plugins can call the xDS flow control service interface to obtain the flow control configuration for Kubernetes Services. For detailed development guidance, please refer to [Flow Control Service Development Guide Based on xDS Service](../developer-guide/sermant-xds-service.md#flow-control-service-based-on-xds-protocol).
+
+### Supported Istio Flow Control Configuration Fields
+
+The Istio flow control configuration includes four types: circuit breaking, retries, fault injection, and rate limiting. Istio can push circuit breaker configurations through a custom resource file of [DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/), retry and fault injection configurations through a custom resource file of [VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/), and rate limiting configurations through a custom resource file of [EnvoyFilter](https://istio.io/v1.23/docs/reference/config/networking/envoy-filter/). Sermant communicates with Istio's control plane protocol based on the xDS protocol to retrieve the flow control configuration. The supported flow control configuration fields are as follows:
+
+#### Circuit Breaker Configuration
+
+- Supported fields for circuit breaker configuration:
+
+| Supported Field                              | Description                                                  |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| spec.trafficPolicy                           | Traffic policy                                               |
+| spec.trafficPolicy.connectionPool            | Connection pool configuration                                 |
+| spec.trafficPolicy.connectionPool.http       | HTTP connection pool configuration                            |
+| spec.trafficPolicy.connectionPool.http.http2MaxRequests | Maximum active requests; triggers circuit breaking when exceeded |
+| spec.trafficPolicy.outlierDetection          | Instance circuit breaker policy; instances are ejected when failure count exceeds threshold |
+| spec.trafficPolicy.outlierDetection.splitExternalLocalOriginErrors | Whether to distinguish between local source and external errors; if true, uses consecutiveLocalOriginFailures to detect failure count threshold |
+| spec.trafficPolicy.outlierDetection.consecutive5xxErrors | Maximum number of 5xx errors before circuit breaking; connection timeout, connection failure, and request failures are considered as 5xx errors |
+| spec.trafficPolicy.outlierDetection.consecutiveLocalOriginFailures | Maximum number of local origin errors before circuit breaking|
+| spec.trafficPolicy.outlierDetection.consecutiveGatewayErrors | Maximum number of gateway errors before circuit breaking; 502, 503, and 504 response codes are considered as gateway errors |
+| spec.trafficPolicy.outlierDetection.interval  | Detection interval; if the error count exceeds the threshold within this period, it triggers instance circuit breaking |
+| spec.trafficPolicy.outlierDetection.baseEjectionTime | Minimum circuit breaker duration; an instance remains in the circuit breaker state for the duration of failure count * minimum circuit breaker time |
+| spec.trafficPolicy.outlierDetection.maxEjectionPercent | Maximum percentage of instances that can be ejected from the pool |
+| spec.trafficPolicy.outlierDetection.minHealthPercent | At least minHealthPercent of instances must be healthy for eviction to occur |
+
+> Note: Errors occurring before sending bytes to the server are considered local source errors, while errors occurring after sending bytes to the server are considered external errors.
+
+- Example circuit breaker configuration template (DestinationRule):
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: spring-test-destinationrule
+spec:
+  host: spring-test.default.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+  subsets:
+    - name: v1
+      labels:
+        version: 1.0.1
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+          localityLbSetting:
+            enabled: true
+        connectionPool:
+          http:
+            http2MaxRequests: 1000
+        outlierDetection:
+          consecutive5xxErrors: 8
+          splitExternalLocalOriginErrors: true
+          consecutiveLocalOriginFailures: 7
+          consecutiveGatewayErrors: 9
+          interval: 5m
+          baseEjectionTime: 15m
+          maxEjectionPercent: 15
+          minHealthPercent: 10
+```
+
+> Description: The `spring-test` service is classified into clusters based on the `version` label. For the v1 cluster, the following flow control rules apply:
+>
+> 1. The maximum number of active requests supported by the client calling the v1 cluster is 1000. If the number of active instances exceeds 1000, the client will return a failure directly, and no further requests will be made to the server. Different client instances will not respond to each other.
+> 2. When the client performs load balancing to the v1 cluster, if any instances in the pool meet one of the following conditions within 5 minutes (local origin error count ≥ 7, 5xx error count ≥ 8, or gateway error count ≥ 9), they will be marked as circuit-broken. If the number of circuit-broken instances in the pool is less than 10%, those instances will be ejected and not called. If the remaining number of instances after eviction is less than 15%, all instances will be returned. The circuit breaker flag for ejected instances will be removed after the circuit breaker timeout period ends.
+
+#### Retry Configuration
+
+- Supported fields for retry configuration:
+
+| Supported Fields                          | Description                                                 |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| spec.retries                              | Retry strategy configuration                                |
+| spec.retries.attempts                     | Maximum allowed retry attempts                               |
+| spec.retries.perTryTimeout                | Retry interval                                              |
+| spec.retries.retryOn                      | Retry conditions, supports 5xx, gateway-error, connect-failure, retriable-4xx, <br> retriable-status-codes, retriable-headers |
+
+- Template for Retry Configuration (VirtualService):
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: spring-test-virtualservice
+spec:
+  hosts:
+  - spring-test
+  http:
+  - name: "base-route"
+    match:
+    - uri:
+        exact: /test
+    route:
+    - destination:
+        host:  spring-test
+        port:
+          number: 8003
+    retries:
+      attempts: 4
+      perTryTimeout: 2s
+      retryOn: "gateway-error"
+```
+
+> Description: For requests to the upstream service named `spring-test` with the access path `/test`, the following flow control rules apply:
+>
+> 1. If the upstream service returns a response with status code 502, 503, or 504, the client will retry up to 4 times, with a 2-second interval between each retry.
+
+#### Fault Injection Configuration
+
+- Supported fields for fault injection configuration:
+
+| Supported Fields                          | Description                                                 |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| spec.fault                                | Fault injection configuration                                |
+| spec.fault.delay                          | Request delay configuration                                  |
+| spec.fault.delay.percentage               | Trigger probability of request delay                          |
+| spec.fault.delay.fixedDelay               | Delay time                                                    |
+| spec.fault.abort                          | Request abort configuration                                  |
+| spec.fault.abort.httpStatus               | HTTP status code to return when the request is aborted       |
+| spec.fault.abort.percentage               | Trigger probability of request abort                         |
+
+- Template for Retry and Fault Injection Configuration (VirtualService):
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: spring-test-virtualservice
+spec:
+  hosts:
+  - spring-test
+  http:
+  - name: "base-route"
+    match:
+    - uri:
+        exact: /test
+    route:
+    - destination:
+        host:  spring-test
+        port:
+          number: 8003
+    fault:
+      delay:
+        percentage:
+          value: 20
+        fixedDelay: 5s
+      abort:
+        percentage:
+          value: 10
+        httpStatus: 400
+```
+
+> Description: For requests to the upstream service named `spring-test` with the access path `/test`, the following flow control rules apply:
+>
+> 1. There is a 10% chance that the request will trigger an abort, in which case the client will return an HTTP 400 status code.
+> 2. There is a 20% chance that the request will trigger a delay, causing the client to delay the request for 5 seconds before calling the upstream service.
+
+#### Rate Limiting Configuration
+
+- Supported fields for rate limiting configuration:
+
+| Supported Field                                | Description                                                                                   |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| spec.configPatches.applyTo                    | Application location, supports HTTP_ROUTE: applies to routes within the virtual host specified in the route configuration. |
+| spec.configPatches.match                      | Matching conditions                                                                            |
+| spec.configPatches.match.routeConfiguration   | Route configuration, match and apply patches upon successful matching.                        |
+| spec.configPatches.match.routeConfiguration.vhost   | Host information in the route configuration                                                   |
+| spec.configPatches.match.routeConfiguration.vhost.name   | Hostname in the route configuration, full qualified service name + port, e.g., spring-test.default.svc.cluster.local:8003 |
+| spec.configPatches.match.routeConfiguration.vhost.route   | Route information                                                                             |
+| spec.configPatches.match.routeConfiguration.vhost.route.name   | [Route name](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/#HTTPRoute-name), corresponding to spec.http.name in VirtualService. |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit   | Rate limiting configuration                                                                   |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.value   | Specific configuration details of the rate limiting                                          |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.token_bucket   | Token bucket configuration for rate limiting                                                 |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.token_bucket.max_tokens   | Maximum number of tokens                                                                      |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.token_bucket.tokens_per_fill   | Number of tokens filled per interval                                                           |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled   | Enabling configuration for rate limiting                                                      |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled.default_value   | Probability of triggering rate limiting configuration                                        |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled.default_value.numerator   | Numerator for triggering probability                                                           |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled.default_value.denominator   | Denominator for triggering probability                                                         |
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.response_headers_to_add   | Response headers to add when rate limiting is triggered                                       |
+
+> Note:
+> 1. If only the route name is specified, the rate limiting rule will apply to all routes that match the specified route name across all service instances.
+> 2. If only the host name is matched, the rate limiting rule will apply to all routes under the specified host.
+> 3. If both the route name and host name are configured, the rate limiting rule will only apply to routes in the specified service instance (name and port must match exactly).
+
+- Supported rate limiting configuration template (EnvoyFilter):
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: filter-local-ratelimit-svc
+  namespace: istio-system
+spec:
+  configPatches:
+    - applyTo: HTTP_ROUTE
+      match:
+        routeConfiguration:
+          vhost:
+            name: spring-test.default.svc.cluster.local:8003
+            route:
+              name: base-route
+      patch:
+        operation: MERGE
+        value:
+          typed_per_filter_config:
+            envoy.filters.http.local_ratelimit:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              value:
+                token_bucket:
+                  max_tokens: 2
+                  tokens_per_fill: 2
+                  fill_interval: 90s
+                filter_enabled:
+                  default_value:
+                    numerator: 50
+                    denominator: HUNDRED
+                response_headers_to_add:
+                    header:
+                      key: x-local-rate-limit
+                      value: 'true'
+```
+
+> Description: For requests to the service "spring-test" with the route name "base-route," the following rate limiting rules will apply:
+>
+> 1. Each request that triggers the server's rate-limiting rule has a 50% chance of consuming a token. Based on the token bucket rate-limiting strategy, the token bucket has a maximum capacity of 2 tokens, and 2 tokens are refilled every 90 seconds. Therefore, up to 2 requests that consume tokens are allowed to pass through the rate-limiting rule every 90 seconds. When a request is rate-limited, the server will add `x-local-rate-limit: true` in the response header.
+> 2. The rate-limiting rules apply independently to different instances of the same service and do not affect each other.
+
+### Sermant Plugin Supporting xDS Flow Control Capabilities
+
+- [Flow Control Plugin](../plugin/flowcontrol.md#flow-control-based-on-xds-protocol)
 
 ## Startup and Result Verification
 
@@ -248,7 +501,7 @@ This demo includes a spring-client microservice, a spring-server microservice, a
 
 #### 1 Preparations
 
-- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-xds-service-discovery-demo-2.1.0.tar.gz) the binary package of the demo.
+- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-service-discovery-demo-2.2.0.tar.gz) the binary package of the demo.
 - Prepare the Kubernetes environment.
 - Install Istio and start it.
 
@@ -304,14 +557,14 @@ Greetings from http://xxx.xxx.xxx.xxx:8080 : hello, the current time is 2050-01-
 
 ### Routing Example Based on xDS Service
 
-This tutorial demonstrates Sermant's routing capabilities based on xDS service using the `xds-router-demo` from the [Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-router-demo) repository. The demo includes two microservices: `spring-client` and `spring-server`. The `spring-client` microservice starts with the Sermant routing plugin and enables xDS-based routing capabilities. When the `spring-client` calls upstream services, the Sermant routing plugin routes the requests based on the upstream service’s routing rules, selecting the appropriate service instance that meets the rules.
+This tutorial demonstrates Sermant's routing capabilities based on xDS service using the `xds-demo` from the [Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-demo) repository. The demo includes two microservices: `spring-client` and `spring-server`. The `spring-client` microservice starts with the Sermant routing plugin and enables xDS-based routing capabilities. When the `spring-client` calls upstream services, the Sermant routing plugin routes the requests based on the upstream service’s routing rules, selecting the appropriate service instance that meets the rules.
 
 #### 1. Preparation
 
-- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-xds-router-demo-2.1.0.tar.gz) the demo binary artifact package.
-- [Download](https://github.com/sermant-io/Sermant/releases/download/v2.1.0/sermant-2.1.0.tar.gz) the Sermant binary artifact package.
+- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-demo-2.2.0.tar.gz) the demo binary artifact package.
+- [Download](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) the Sermant binary artifact package.
 - Prepare a Kubernetes environment.
-- Install and start [Istio](https://istio.io/latest/docs/setup/getting-started/).
+- Install and start [Istio](https://istio.io/v1.23/docs/setup/getting-started/).
 
 #### 2. Obtain the Demo Binary Artifacts
 
@@ -387,4 +640,91 @@ If the web page displays the following output, it indicates that `spring-client`
 
 ```
 spring-server version: v1
+```
+
+### Example of Flow Control Based on xDS Service
+
+This tutorial demonstrates the flow control capability of Sermant based on xDS services using the [Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-router-demo) repository's xds-router-demo. The demo includes `spring-client` and `spring-server` microservices. The `spring-client` microservice mounts the Sermant flow control plugin and enables flow control based on xDS. The Sermant flow control plugin will control traffic according to the flow control rules of upstream services when `spring-client` calls those upstream services.
+
+#### 1 Prerequisites
+
+- [Download](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-router-demo-2.2.0.tar.gz) the Demo binary package.
+- [Download](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) the Sermant binary package.
+- [Prepare](https://kubernetes.io/zh-cn/docs/tutorials/hello-minikube/) a Kubernetes environment.
+- Install and start [Istio](https://istio.io/v1.23/docs/setup/getting-started/).
+
+#### 2 Get the Demo Binary Package
+
+Unzip the Demo binary package to get the `router-product/` directory files.
+
+#### 3 Get and Move the Sermant Binary Package
+
+Unzip the Sermant binary package to get the `sermant-agent/` directory files.
+
+Execute the following command to move the Sermant binary files to the `spring-client` directory for packaging the `spring-client` image:
+
+```
+cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/router-product/spring-client
+```
+
+> Note: `${sermant-path}` is the path where the Sermant binary package is located, and `${demo-path}` is the path where the Demo binary package is located.
+
+#### 4 Start the Spring Server
+
+Navigate to the `router-product/spring-server` directory:
+
+1. Run the following command to build the `spring-server` image:
+
+   ```
+   sh build-server.sh
+   ```
+
+2. Run the following command to apply the Spring Server Pod and Service:
+
+   ```
+   kubectl apply -f ../script/spring-server.yaml
+   ```
+
+#### 5 Start the Spring Client
+
+Navigate to the `product/spring-client` directory:
+
+1. Run the following command to build the `spring-client` image:
+
+   ```
+   sh build-client.sh
+   ```
+
+2. Run the following command to apply the Spring Client Pod and Service:
+
+   ```
+   kubectl apply -f ../script/spring-client-flowcontrol.yaml
+   ```
+
+#### 6 Apply Flow Control Rules
+
+Navigate to the `product/script` directory and run the following commands to apply the flow control rules:
+
+```
+kubectl apply -f spring-server-destination.yaml
+kubectl apply -f spring-server-virtureservice-flowcontrol.yaml
+```
+
+> Rule Explanation:
+>
+> - `DestinationRule`: Divides the Pods into two subsets (v1 and v2) based on the `version` label of the Deployment. The `spring-server` cluster uses the `ROUND_ROBIN` load balancing rule.
+> - `VirtualService`: For HTTP requests accessing the `spring-server` service, if the request contains the header `version:v1` and the path is `/router`, the request will be routed to the v1 subset of `spring-server`. Requests to the v1 subset will trigger a 100% request abort.
+
+#### 7 Verification
+
+Access the `spring-client` microservice via the web, set the `host` parameter to `spring-server`, and the `version` to `v1`, to test whether the `spring-client` service triggers a request abort:
+
+```
+http://127.0.0.1:30110/router/httpClient?host=spring-server&version=v1
+```
+
+If the following message is displayed on the webpage, it indicates that the `spring-client` has triggered a request abort:
+
+```
+The request has been aborted due to triggering fault injection
 ```

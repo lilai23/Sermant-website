@@ -12,6 +12,20 @@ Sermant xDS服务使微服务可以在Kubenetes场景下接入Istio。Sermant基
 
 Sermant是基于Java Agent的云原生无代理服务网格，业务微服务挂载Sermant同进程运行，无需启动额外的Sidecar容器进行网络代理，可以大幅度降低应用的性能损耗和服务之间的调用时延。
 
+## 支持版本和限制
+
+### 版本支持
+
+Istio版本（已验证支持）：1.6 - 1.23
+
+xDS版本：v3
+
+Kubenetes版本和Istio的版本适配请参考[Istio版本支持](https://istio.io/v1.23/docs/releases/supported-releases/#support-status-of-istio-releases)。
+
+### 限制
+
+Sermant是基于Java Agent的云原生无代理服务网格，仅支持Java语言。
+
 ### Istio+Sermant的Sidecar无代理模式部署形态
 
 <MyImage src="/docs-img/xds-deploy.jpg" />
@@ -33,7 +47,7 @@ Kubenetes环境中，用户可以通过[Deployment](https://kubernetes.io/docs/c
 
 **Deployment**：
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -59,7 +73,7 @@ spec:
 
 **Service：**
 
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -79,7 +93,7 @@ spec:
 
 ### 支持xDS服务发现能力的Sermant插件
 
-- [路由插件](../plugin/router.md#基于xDS协议的路由)
+- [路由插件](../plugin/router.md#基于xDS协议的路由)、[流控插件](../plugin/flowcontrol.md#基于xds协议的流控)
 
 ## 基于xDS服务的路由能力
 
@@ -87,7 +101,7 @@ Sermant框架层基于xDS协议实现了路由配置的获取能力，插件可�
 
 ### Istio路由配置字段支持
 
-Istio通过下发[DestinationRule](https://istio.io/latest/zh/docs/reference/config/networking/destination-rule/)和[VirtualService](https://istio.io/latest/zh/docs/reference/config/networking/virtual-service/) 自定义资源文件下发路由配置。Sermant基于xDS协议和Istio的控制平面协议进行通信获取路由配置，具体支持的路由配置字段如下所示：
+Istio通过下发[DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/)和[VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/) 自定义资源文件下发路由配置。Sermant基于xDS协议和Istio的控制平面协议进行通信获取路由配置，具体支持的路由配置字段如下所示：
 
 **VirtualService**：
 
@@ -118,7 +132,7 @@ Istio通过下发[DestinationRule](https://istio.io/latest/zh/docs/reference/con
 
 **VirtualService**：
 
-```
+```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -158,7 +172,7 @@ spec:
 
 **DestinationRule**：
 
-```
+```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -187,7 +201,7 @@ spec:
 
 ### 支持xDS路由配置能力的Sermant插件
 
-- [路由插件](../plugin/router.md#基于xDS协议的路由)
+- [路由插件](../plugin/router.md#基于xDS协议的路由)、[流控插件](../plugin/flowcontrol.md#基于xds协议的流控)
 
 ## 基于xDS服务的负载均衡能力
 
@@ -195,7 +209,7 @@ Sermant框架层基于xDS协议实现了负载均衡配置的获取能力，插�
 
 ### Istio负载均衡配置字段支持
 
-Istio通过下发[DestinationRule](https://istio.io/latest/zh/docs/reference/config/networking/destination-rule/)自定义资源文件下发负载均衡配置。Sermant基于xDS协议和Istio的控制平面协议进行通信获取负载均衡配置，具体支持的负载均衡配置字段和负载均衡规则如下所示：
+Istio通过下发[DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/)自定义资源文件下发负载均衡配置。Sermant基于xDS协议和Istio的控制平面协议进行通信获取负载均衡配置，具体支持的负载均衡配置字段和负载均衡规则如下所示：
 
 | 支持字段                               | 描述                                                     |
 | -------------------------------------- | -------------------------------------------------------- |
@@ -207,7 +221,7 @@ Istio通过下发[DestinationRule](https://istio.io/latest/zh/docs/reference/con
 
 **DestinationRule**：
 
-```
+```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -234,19 +248,246 @@ spec:
 
 ### 支持xDS负载均衡配置能力的Sermant插件
 
-- [路由插件](../plugin/router.md#基于xDS协议的路由)
+- [路由插件](../plugin/router.md#基于xDS协议的路由)、[流控插件](../plugin/flowcontrol.md#基于xds协议的流控)
 
-## 支持版本和限制
+## 基于xDS服务的流控能力
 
-### 版本支持
+Sermant框架层基于xDS协议实现了流控配置的获取能力，插件可以调用xDS流控服务接口获取Kubenetes Service的流控配置。具体开发指导请参考[基于xDS服务的流控服务开发指导](../developer-guide/sermant-xds-service.md#基于xds协议的流控服务)。
 
-Istio版本：1.6版本及以上
+### Istio流控配置字段支持
 
-Kubenetes版本和Istio的版本适配请参考[Istio版本支持](https://istio.io/latest/zh/docs/releases/supported-releases/#support-status-of-istio-releases)。
+Istio流控配置包含熔断、重试、错误注入、限流四种配置。Istio可以通过下发[DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/)自定义资源文件来下发熔断配置，通过下发[VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/)自定义资源文件来下发重试配置和错误注入配置，通过下发[EnvoyFilter](https://istio.io/v1.23/docs/reference/config/networking/envoy-filter/) 自定义资源文件下发限流配置。Sermant基于xDS协议和Istio的控制平面协议进行通信获取流控配置，具体支持的流控配置字段如下所示：
 
-### 限制
+#### 熔断配置
 
-Sermant是基于Java Agent的云原生无代理服务网格，仅支持Java语言。
+- 熔断配置支持的字段：
+
+| 支持字段                               | 描述                                                     |
+| -------------------------------------- | -------------------------------------------------------- |
+| spec.trafficPolicy                     | 流量策略                                                 |
+| spec.trafficPolicy.connectionPool      | 连接池配置|
+| spec.trafficPolicy.connectionPool.http    | http的连接池配置 |
+| spec.trafficPolicy.connectionPool.http.http2MaxRequests    | 最大活跃请求数，活跃请求数超过阈值则触发熔断 |
+| spec.trafficPolicy.outlierDetection    | 实例熔断策略，实例失败次数达到阈值则会触发熔断而被驱逐 |
+| spec.trafficPolicy.outlierDetection.splitExternalLocalOriginErrors   | 是否区分本地来源错误和外部错误，设置为true，将使用consecutiveLocalOriginFailures来检测实例的失败次数是否达到阈值 |
+| spec.trafficPolicy.outlierDetection.consecutive5xxErrors    | 实例被熔断之前可以发生的5xx错误次数，连接超时、连接错误/失败和请求失败均被视为 5xx 错误 |
+| spec.trafficPolicy.outlierDetection.consecutiveLocalOriginFailures    | 实例被熔断之前可以发生的本地来源错误次数 |
+| spec.trafficPolicy.outlierDetection.consecutiveGatewayErrors    | 实例被熔断之前可以发生的网关错误次数，响应码为502、503、504时视为网关错误|
+| spec.trafficPolicy.outlierDetection.interval  | 检测的时间间隔，在时间间隔内错误次数达到阈值则会触发实例熔断|
+| spec.trafficPolicy.outlierDetection.baseEjectionTime  | 实例的最小熔断时间，实例保持熔断状态的时间等于熔断次数*最小熔断时间|
+| spec.trafficPolicy.outlierDetection.maxEjectionPercent  | 驱逐的实例占可选实例的最大百分比 |
+| spec.trafficPolicy.outlierDetection.minHealthPercent  | 至少有minHealthPercent的实例处于健康状态，才会进行驱逐 |
+
+> 注意：发送字节给服务端前发生的错误视为本地来源错误，发送字节给服务端后发生的错误视为外部错误
+
+- 熔断配置的模板（DestinationRule）：
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: spring-test-destinationrule
+spec:
+  host: spring-test.default.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+  subsets:
+    - name: v1
+      labels:
+        version: 1.0.1
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+          localityLbSetting:
+            enabled: true
+        connectionPool:
+          http:
+            http2MaxRequests: 1000
+        outlierDetection:
+          consecutive5xxErrors: 8
+          splitExternalLocalOriginErrors: true
+          consecutiveLocalOriginFailures: 7
+          consecutiveGatewayErrors: 9
+          interval: 5m
+          baseEjectionTime: 15m
+          maxEjectionPercent: 15
+          minHealthPercent: 10
+```
+
+> 描述：spring-test服务根据version标签划为Cluster集群。对于v1集群有以下流控规则：
+>
+> 1. 客户端调用v1集群时支持的最大活跃请求数为1000，活跃实例数超过1000时客户端会直接返回失败，不会调用服务端，不同的客户端实例不会相互响应。 
+> 2. 客户端调用v1集群进行负载均衡时，如果可选实例中存在满足5分钟内本地来源错误次数达到7、5xx错误次数达到8、网关错误次数达到9任一条件的实例，则标记为熔断实例，当可选的实例中标记为熔断的实例数量小于10%则驱逐熔断的实例，驱逐的实例将不会被调用。如果驱逐熔断实例之后剩余实例数小于15%则返回全部实例。熔断的实例会在熔断时间结束之后取消熔断标记。
+
+#### 重试配置
+
+- 重试配置支持的字段:
+
+| 支持字段                               | 描述                                                     |
+| -------------------------------------- | -------------------------------------------------------- |
+| spec.retries                                | 重试策略配置                                                 |
+| spec.retries.attempts                       | 允许的最大重试次数                                     |
+| spec.retries.perTryTimeout                  | 重试的时间间隔           |
+| spec.retries.retryOn                        | 重试条件，支持5xx、gateway-error、connect-failure、retriable-4xx、<br> retriable-status-codes、retriable-headers           |
+
+- 重试配置的模板（VirtualService）:
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: spring-test-virtualservice
+spec:
+  hosts:
+  - spring-test
+  http:
+  - name: "base-route"
+    match:
+    - uri:
+        exact: /test
+    route:
+    - destination:
+        host:  spring-test
+        port:
+          number: 8003
+    retries:
+      attempts: 4
+      perTryTimeout: 2s
+      retryOn: "gateway-error"
+```
+
+> 描述：对于访问服务名称为spring-test的上游服务且访问路径为/test的请求，存在如下流控规则：
+>
+> 1. 如果上游服务返回的响应状态码为502、503、504的其中一种，则客户端会进行重试，最多重试4次，每次重试间隔2秒。
+
+#### 错误注入配置
+
+- 错误注入配置支持的字段:
+
+| 支持字段                               | 描述                                                     |
+| -------------------------------------- | -------------------------------------------------------- |
+| spec.fault                                  | 错误注入配置                                                 |
+| spec.fault.delay                            | 请求延时配置                                                 |
+| spec.fault.delay.percentage                 | 请求延时的触发概率                                                 |
+| spec.fault.delay.fixedDelay                 | 延迟时间                                                 |
+| spec.fault.abort                  | 请求终止配置                                                 |
+| spec.fault.abort.httpStatus       | 请求终止时返回错误响应的响应码                                                 |
+| spec.fault.abort.percentage       | 请求终止的触发概率                                              |
+
+
+- 重试和错误注入支持的模板（VirtualService）:
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: spring-test-virtualservice
+spec:
+  hosts:
+  - spring-test
+  http:
+  - name: "base-route"
+    match:
+    - uri:
+        exact: /test
+    route:
+    - destination:
+        host:  spring-test
+        port:
+          number: 8003
+    fault:
+      delay:
+        percentage:
+          value: 20
+        fixedDelay: 5s
+      abort:
+        percentage:
+          value: 10
+        httpStatus: 400
+```
+
+> 描述：对于访问服务名称为spring-test的上游服务且访问路径为/test的请求，存在如下流控规则：
+>
+> 1. 请求会有10%的概率触发请求中止，触发请求中止时客户端会直接返回状态码为400的响应。
+> 2. 请求会有20%的概率触发请求延时，触发请求延时客户端会延时5秒再调用上游服务。
+
+#### 限流配置
+
+- 限流配置支持的字段:
+
+| 支持字段                               | 描述                                                     |
+| -------------------------------------- | -------------------------------------------------------- |
+| spec.configPatches.applyTo           | 应用位置，支持HTTP_ROUTE：应用于路由配置中指定的虚拟主机内的路由对象|
+| spec.configPatches.match             | 匹配条件|
+| spec.configPatches.match.routeConfiguration   | 路由配置，通过路由配置进行匹配，匹配成功后应用补丁|
+| spec.configPatches.match.routeConfiguration.vhost   |路由配置中的主机信息|
+| spec.configPatches.match.routeConfiguration.vhost.name   |路由配置中的主机名称，服务的全限定名称+端口，如：spring-test.default.svc.cluster.local:8003|
+| spec.configPatches.match.routeConfiguration.vhost.route   |路由信息|
+| spec.configPatches.match.routeConfiguration.vhost.route.name   |[路由名称](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/#HTTPRoute-name)，对应VirtualService中的spec.http.name|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit   |限流配置|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.value   |限流配置的具体配置信息|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.token_bucket   |限流配置的令牌桶信息|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.token_bucket.max_tokens   |最大令牌数量|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.token_bucket.tokens_per_fill   |每次填充的令牌数量|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled   |限流配置的启用配置|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled.default_value   |请求触发限流配置的概率|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled.default_value.numerator   |触发概率的分子|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.filter_enabled.default_value.denominator   |触发概率的分母|
+| spec.configPatches.patch.value.typed_per_filter_config.envoy.filters.http.local_ratelimit.response_headers_to_add   |触发限流时响应信息需要添加的响应头|
+
+> 注意：
+> 1. 如果只配路由名称，限流规则会对所有服务实例下路由名称匹配的路由生效。
+> 2. 如果只匹配主机名称，则限流规则会对主机下所有的路由生效。
+> 3. 如果路由名称和主机名称都配置，限流规则只会对指定服务实例（名称和端口必须全部匹配）下路由名称匹配的路由生效。
+
+- 限流配置支持的模板（EnvoyFilter）：
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: filter-local-ratelimit-svc
+  namespace: istio-system
+spec:
+  configPatches:
+    - applyTo: HTTP_ROUTE
+      match:
+        routeConfiguration:
+          vhost:
+            name: spring-test.default.svc.cluster.local:8003
+            route:
+              name: base-route
+      patch:
+        operation: MERGE
+        value:
+          typed_per_filter_config:
+            envoy.filters.http.local_ratelimit:
+              "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+              type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              value:
+                token_bucket:
+                  max_tokens: 2
+                  tokens_per_fill: 2
+                  fill_interval: 90s
+                filter_enabled:
+                  default_value:
+                    numerator: 50
+                    denominator: HUNDRED
+                response_headers_to_add:
+                    header:
+                      key: x-local-rate-limit
+                      value: 'true'
+```
+
+> 描述：对于调用服务spring-test且路由名称为base-route的请求，会触发以下流控规则：
+>
+> 1. 每个触发服务端限流规则的请求有50%的概率消耗令牌。基于令牌桶限流策略，令牌桶的最大容量为2，每90秒会重新填充2个令牌，因此每90秒，最多允许2个消耗令牌的请求通过限流规则。当请求被限流时，服务端会在响应头中添加 x-local-rate-limit: true。
+> 2. 限流规则对同一服务的不同实例单独生效，不会相互影响。
+
+### 支持xDS流控能力的Sermant插件
+
+- [流控插件](../plugin/flowcontrol.md#基于xds协议的流控)
 
 ## 启动和结果验证
 
@@ -256,9 +497,9 @@ Sermant是基于Java Agent的云原生无代理服务网格，仅支持Java语�
 
 #### 1 准备工作
 
-- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-xds-service-discovery-demo-2.1.0.tar.gz) Demo二进制产物压缩包
+- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-service-discovery-demo-2.2.0.tar.gz) Demo二进制产物压缩包
 - [准备](https://kubernetes.io/zh-cn/docs/tutorials/hello-minikube/) Kubenetes环境
-- 安装[Istio](https://istio.io/latest/zh/docs/setup/getting-started/)并启动
+- 安装[Istio](https://istio.io/v1.23/docs/setup/getting-started/)并启动
 
 #### 2 获取Demo二进制产物
 
@@ -312,14 +553,14 @@ Greetings from http://xxx.xxx.xxx.xxx:8080 : hello, the current time is 2050-01-
 
 ### 基于xds服务的路由示例
 
-本教程使用[Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-router-demo)仓库中的xds-router-demo演示Sermant 基于xDS服务的路由能力。本Demo中包括spring-client微服务、spring-server微服务。spring-client微服务挂载Sermant的路由插件启动，并开启基于xDS的路由能力，Sermant路由插件在spring-client调用上游服务时，根据上游服务的路由规则进行路由，并选择符合规则的服务实例进行调用。
+本教程使用[Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-demo)仓库中的xds-demo演示Sermant 基于xDS服务的路由能力。本Demo中包括spring-client微服务、spring-server微服务。spring-client微服务挂载Sermant的路由插件启动，并开启基于xDS的路由能力，Sermant路由插件在spring-client调用上游服务时，根据上游服务的路由规则进行路由，并选择符合规则的服务实例进行调用。
 
 #### 1 准备工作
 
-- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-xds-router-demo-2.1.0.tar.gz) Demo二进制产物压缩包
-- [下载](https://github.com/sermant-io/Sermant/releases/download/v2.1.0/sermant-2.1.0.tar.gz) Sermant二进制产物压缩包
+- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-demo-2.2.0.tar.gz) Demo二进制产物压缩包
+- [下载](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) Sermant二进制产物压缩包
 - [准备](https://kubernetes.io/zh-cn/docs/tutorials/hello-minikube/) Kubenetes环境
-- 安装[Istio](https://istio.io/latest/zh/docs/setup/getting-started/)并启动
+- 安装[Istio](https://istio.io/v1.23/docs/setup/getting-started/)并启动
 
 #### 2 获取Demo二进制产物
 
@@ -398,5 +639,90 @@ http://127.0.0.1:30110/router/httpClient?host=spring-server&version=v1
 spring-server version: v1
 ```
 
-### 
+### 基于xds服务的流控示例
 
+本教程使用[Sermant-examples](https://github.com/sermant-io/Sermant-examples/tree/main/xds-router-demo)仓库中的xds-router-demo演示Sermant基于xDS服务的错误注入能力。本Demo中包括spring-client微服务、spring-server微服务。spring-client微服务挂载Sermant的流控插件启动，并开启基于xDS的流控能力，Sermant流控插件在spring-client调用上游服务时，根据上游服务的错误注入规则进行请求中止。
+
+#### 1 准备工作
+
+- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-xds-router-demo-2.2.0.tar.gz) Demo二进制产物压缩包
+- [下载](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) Sermant二进制产物压缩包
+- [准备](https://kubernetes.io/zh-cn/docs/tutorials/hello-minikube/) Kubenetes环境
+- 安装[Istio](https://istio.io/v1.23/docs/setup/getting-started/)并启动
+
+#### 2 获取Demo二进制产物
+
+解压Demo二进制产物压缩包，即可得到`router-product/`目录文件。
+
+#### 3 获取和移动Sermant二进制产物
+
+解压Sermant二进制产物压缩包，即可得到`sermant-agent/`目录文件。
+
+执行如下命令，将Sermant二进制产物移动至spring-client目录，用于打包spring-client镜像：
+
+```
+cp -r ${sermant-path}/sermant-agent/agent ${demo-path}/router-product/spring-client
+```
+
+> 说明：${sermant-path}为Sermant二进制产物所在路径，${demo-path}为Demo二进制产物所在路径。
+
+#### 4 启动spring-server
+
+进入router-product/spring-server目录：
+
+1. 执行以下命令打包spring-server镜像：
+
+   ```
+   sh build-server.sh
+   ```
+
+2. 执行以下命令运行spring-server Pod和Service
+
+   ```
+   kubectl apply -f ../script/spring-server.yaml
+   ```
+
+#### 5 启动spring-client
+
+进入product/spring-client目录：
+
+1. 执行以下命令打包spring-client镜像：
+
+   ```
+   sh build-client.sh
+   ```
+
+2. 执行以下命令运行spring-client Pod和Service
+
+   ```
+   kubectl apply -f ../script/spring-client-flowcontrol.yaml
+   ```
+
+#### 6 下发流控规则
+
+进入product/script目录，执行如下命令下发错误注入的请求中止规则：
+
+```
+kubectl apply -f spring-server-destination.yaml
+kubectl apply -f spring-server-virtureservice-flowcontrol.yaml
+```
+
+> 规则说明：
+>
+> DestinationRule: 根据Deployment的version标签将Pod划分为v1和v2两个子集, spring-server集群使用ROUND_ROBIN负载均衡规则。
+>
+> VirtualService: 对于访问spring-server服务的http请求，如果存在version:v1的header，并且请求路径为/router，则将请求路由到spring-server的v1子集，对于请求到v1子集的请求100%触发请求中止
+
+#### 7 验证
+
+通过网页访问spring-client微服务，入参host设置为spring-server，version为v1, 调用验证spring-client服务是否触发请求中止：
+
+```
+http://127.0.0.1:30110/router/httpClient?host=spring-server&version=v1
+```
+
+网页收到如下显示，说明spring-client触发了请求中止
+
+```
+The request has been aborted due to triggering fault injection
+```

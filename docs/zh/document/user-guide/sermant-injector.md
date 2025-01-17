@@ -26,6 +26,10 @@ agent:
     addr:
     pullPolicy: IfNotPresent
 
+externalAgent:
+  imageAddr:
+  fileName:
+  
 config:
   type: ZOOKEEPER
   endpoints: http://localhost:30110
@@ -40,7 +44,7 @@ configMap:
 
  参数说明如下：
 
-| <span style="display:inline-block;width:100px">主参数键</span> | <span style="display:inline-block;width:100px">二层参数键</span> | <span style="display:inline-block;width:100px">三层参数键</span> | 说明                                                         | <span style="display:inline-block;width:40px">是否必须</span> |
+| <span style="display:inline-block;width:110px">主参数键</span> | <span style="display:inline-block;width:100px">二层参数键</span> | <span style="display:inline-block;width:100px">三层参数键</span> | 说明                                                         | <span style="display:inline-block;width:40px">是否必须</span> |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | namespace                                                    | name                                                         | -                                                            | 部署Sermant Injector所在的namespace                          | 是                                                           |
 | injector                                                     | replicas                                                     | -                                                            | 部署Sermant Injector的实例个数                               | 是                                                           |
@@ -49,11 +53,13 @@ configMap:
 |                                                              |                                                              | pullSecrets                                                  | 拉取镜像的密钥，默认为default-secret，按需修改               | 是                                                           |
 | agent                                                        | image                                                        | addr                                                         | Sermant Agent的镜像地址                                      | 是                                                           |
 |                                                              |                                                              | pullPolicy                                                   | Sermant Agent的镜像拉取策略：Always(总是拉取)，IfNotPresent(默认值,本地有则使用本地镜像,不拉取)，Never(只使用本地镜像，从不拉取) | 是                                                           |
-| config                                                       | type                                                         | -                                                            | Sermant Agent配置中心类型: 当前支持ZooKeeper、Kie和Nacos  | 是                                                           |
-|                                                              | endpoints                                                    | -                                                            | Sermant Agent配置中心地址                                    | 是                                                           |
-| registry                                                     | endpoints                                                    | -                                                            | Sermant Agent注册插件的注册中心地址                          | 是                                                           |
-| configMap                                                    | enabled                                                      | -                                                            | 通用环境变量配置开关，默认为false，如需开启请配置为true      | 是                                                           |
-|                                                              | namespaces                                                   | -                                                            | 注入configMap的namespace，需与业务应用的namespace保持一致    | 是                                                           |
+| externalAgent                                                | imageAddr                                                    | -                                                            | 启动Sermant时挂载的外部Agent的镜像（需参照本文[镜像制作脚本的参数配置](#镜像制作脚本的参数配置)构建） | 否                                                           |
+|                                                              | fileName                                                     | -                                                            | 启动Sermant时挂载的外部Agent的jar包名字                      | 否                                                           |
+| config                                                       | type                                                         | -                                                            | Sermant Agent配置中心类型: 当前支持ZooKeeper、Kie和Nacos。也可在配置文件中配置 | 否                                                           |
+|                                                              | endpoints                                                    | -                                                            | Sermant Agent配置中心地址。也可在配置文件中配置              | 否                                                           |
+| registry                                                     | endpoints                                                    | -                                                            | Sermant Agent注册插件的注册中心地址。也可在配置文件中配置    | 否                                                           |
+| configMap                                                    | enabled                                                      | -                                                            | 通用环境变量配置开关，默认为false，如需开启请配置为true      | 否                                                           |
+|                                                              | namespaces                                                   | -                                                            | 注入configMap的namespace，需与业务应用的namespace保持一致    | 否                                                           |
 |                                                              | env                                                          | 自定义key1                                                   | 配置自定义value1                                             | 否                                                           |
 |                                                              |                                                              | 自定义key2                                                   | 配置自定义value2                                             | 否                                                           |
 
@@ -89,11 +95,11 @@ configMap:
 
 **[build-sermant-image.sh](https://github.com/sermant-io/Sermant/blob/develop/sermant-injector/images/sermant-agent/build-sermant-image.sh)**
 
-| 参数名         | 说明                               | 是否必须 |
-| -------------- | ---------------------------------- | -------- |
-| sermantVersion | sermant-agent-x.x.x.tar.gz包的版本 | 是       |
-| imageName      | 构建的Sermant Agent镜像名称        | 是       |
-| imageVersion   | 构建的Sermant Agent镜像版本        | 是       |
+| 参数名         | 说明                          | 是否必须 |
+| -------------- | ----------------------------- | -------- |
+| sermantVersion | sermant--x.x.x.tar.gz包的版本 | 是       |
+| imageName      | 构建的Sermant Agent镜像名称   | 是       |
+| imageVersion   | 构建的Sermant Agent镜像版本   | 是       |
 
 **[build-injector-image.sh](https://github.com/sermant-io/Sermant/blob/develop/sermant-injector/images/injector/build-injector-image.sh)**
 
@@ -101,6 +107,15 @@ configMap:
 | ------------ | ------------------------------ | -------- |
 | imageName    | 构建的Sermant Injector镜像名称 | 是       |
 | imageVersion | 构建的Sermant Injector镜像版本 | 是       |
+
+**[build-external-agent-image.sh](https://github.com/sermant-io/Sermant/blob/develop/sermant-injector/images/external-agent/build-external-agent-image.sh)**
+
+| 参数名       | 说明                      | 是否必须 |
+| ------------ | ------------------------- | -------- |
+| imageName    | 构建的外部Agent的镜像名称 | 是       |
+| imageVersion | 构建的外部Agent的镜像版本 | 是       |
+
+注意，[ExternalAgent.Dockerfile](https://github.com/sermant-io/Sermant/blob/develop/sermant-injector/images/external-agent/ExternalAgent.Dockerfile)中外部Agent的jar包需要按照实际使用的Agent来修改。
 
 ## 支持版本
 
@@ -120,11 +135,11 @@ Sermant Injector当前支持在Kubernetes 1.15及以上版本进行部署，通�
 
 点击 [here](https://github.com/sermant-io/Sermant/releases)下载release包，也可以在项目中自行打包。
 
-#### 制作镜像
+#### 制作Sermant Agent镜像
 
 修改文件夹 `sermant-injector/images/sermant-agent`下`build-sermant-image.sh` 脚本中`sermantVersion`,`imageName`和`imageVerison`的值。
 
-在k8s节点下，将`build-sermant-image.sh`和`Sermant.Dockerfile`置于release包`sermant-agent-xxx.tar.gz`同一目录下，执行`build-sermant-image.sh`脚本，完成Sermant Agent镜像制作。
+在k8s节点下，将`build-sermant-image.sh`和`Sermant.Dockerfile`置于release包`sermant-x.x.x.tar.gz`同一目录下，执行`build-sermant-image.sh`脚本，完成Sermant Agent镜像制作。
 
 ```shell
 sh build-sermant-image.sh
@@ -150,7 +165,27 @@ sh build-injector-image.sh
 
 如需将镜像推送至镜像仓库，请执行`docker push ${imageName}:{imageVerison}` 命令。
 
-### 3 部署Sermant Injector实例
+### 3 构建外部Agent镜像(可选)
+
+#### 准备外部Agent包
+
+首先准备好外部Agent的jar包文件(如果有其他配套文件请一并准备)，例如OpenTelemetry Agent可以从此[下载](https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases)。
+
+#### 制作外部Agent镜像
+
+如果您需要在Sermant启动时自动挂载外部Agent（例如OpenTelemetry Agent），请参考[在Sermant中使用和管理外部JavaAgent](sermant-agent.md#在Sermant中使用和管理外部JavaAgent)中借助Sermant Injector自动挂载的使用介绍，并按照以下操作构建镜像。
+
+修改文件夹 `sermant-injector/images/external-agent`下`build-external-agent-image.sh` 脚本中`imageName`和`imageVerison`的值：
+
+在k8s节点下，将`build-external-agent-image.sh`和`ExternalAgent.Dockerfile`置于外部Agent包例如`opentelemetry-javaagent.jar`同一目录下，执行`build-external-agent-image.sh`脚本，完成外部Agent包镜像制作。
+
+```shell
+sh build-external-agent-image.sh
+```
+
+如需将镜像推送至镜像仓库，请执行`docker push ${imageName}:{imageVerison}` 命令。
+
+### 4 部署Sermant Injector实例
 
 在宿主应用容器化部署前，需要先部署Sermant Injector实例。本项目采用Helm进行Kubernetes包管理，使用`sermant-injector/deployment/release`下的`injector`Chart模版。
 
@@ -164,7 +199,7 @@ helm install sermant-injector sermant-injector/deployment/release/injector
 
 至此，宿主应用部署前的环境配置工作完成。
 
-### 4 部署宿主应用
+### 5 部署宿主应用
 
 #### 自动挂载Sermant
 
@@ -208,7 +243,7 @@ spec:
 
 若pod无法创建，请检查Sermant Injector是否正确部署以及Sermant Agent镜像是否正确构建。
 
-### 5 验证
+### 6 验证
 
 pod创建成功后，执行如下命令，其中`${pod_name}`为宿主应用的pod名称
 

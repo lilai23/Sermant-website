@@ -18,7 +18,7 @@ Sermant Backend与配置中心配合使用，可以管理配置中心的所有�
 
 ### 热插拔服务
 
-Sermant Backend与Sermant Agent配合使用，还可以作为热插拔功能的服务端，监听Sermant Backend的热插拔指令，执行插件安装、卸载和升级操作。实际效果图参见[热插拔服务验证](#_7-热插拔服务验证)
+Sermant Backend与Sermant Agent配合使用，还可以作为热插拔功能的服务端，监听Sermant Backend的热插拔指令，执行插件安装、卸载、升级以及外部Agent的挂载操作。实际效果图参见[热插拔服务验证](#_7-热插拔服务验证)
 
 > 注：Sermant Backend为**非必要组件**，用户可按需部署。
 
@@ -98,8 +98,8 @@ Sermant Backend使用JDK 1.8版本开发，因此运行环境需JDK 1.8及以上
 
 ### 1 准备工作
 
-- [下载](https://github.com/sermant-io/Sermant/releases/download/v2.1.0/sermant-2.1.0.tar.gz) Sermant Release包（当前版本推荐2.1.0版本）
-- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.1.0/sermant-examples-springboot-registry-demo-2.1.0.tar.gz) Demo二进制产物压缩包
+- [下载](https://github.com/sermant-io/Sermant/releases/download/v2.2.0/sermant-2.2.0.tar.gz) Sermant Release包（当前版本推荐2.2.0版本）
+- [下载](https://github.com/sermant-io/Sermant-examples/releases/download/v2.2.0/sermant-examples-springboot-registry-demo-2.2.0.tar.gz) Demo二进制产物压缩包
 - [下载](https://zookeeper.apache.org/releases.html#download)ZooKeeper（动态配置中心&注册中心），并启动
 
 ### 2 修改Sermant Agent参数配置
@@ -174,13 +174,13 @@ java -Dserver.port=8990 -jar service-b.jar
 #### 5.1 验证事件查询
 
 **5.1.1 上报时间查询**
-  
+
   在**事件管理 -> 监测**页面，下图红色方框位置设置查询的事件时间范围，点击查询按钮进行查询
 
   <MyImage src="/docs-img/backend/zh/backend-event-query-time.png"></MyImage>
 
 **5.1.2 服务名查询**
-  
+
   在**事件管理 -> 监测**页面，下图红色方框位置设置按服务名查询，输入需要查询的服务名(支持单个或多个服务名查询)，点击查询按钮进行查询
 
   <MyImage src="/docs-img/backend/zh/backend-event-query-service-1.png"></MyImage>
@@ -188,7 +188,7 @@ java -Dserver.port=8990 -jar service-b.jar
   <MyImage src="/docs-img/backend/zh/backend-event-query-service-2.png"></MyImage>
 
 **5.1.3 ip查询**
-  
+
   在**事件管理 -> 监测**页面，下图红色方框位置设置按ip查询，输入需要查询的ip地址(支持单个或多个ip查询)，点击查询按钮进行查询
 
   <MyImage src="/docs-img/backend/zh/backend-event-query-ip-1.png"></MyImage>
@@ -196,25 +196,25 @@ java -Dserver.port=8990 -jar service-b.jar
   <MyImage src="/docs-img/backend/zh/backend-event-query-ip-2.png"></MyImage>
 
 **5.1.4 级别查询**
-  
+
   在**事件管理 -> 监测**页面，下图红色方框位置选择需要查询的事件级别，支持多选，选择后点击筛选进行查询
 
   <MyImage src="/docs-img/backend/zh/backend-event-query-level.png "></MyImage>
 
 **5.1.5 类型查询**
-  
+
   在**事件管理 -> 监测**页面，下图红色方框位置选择需要查询的事件类型，支持多选，选择后点击筛选进行查询
 
   <MyImage src="/docs-img/backend/zh/backend-event-query-type.png"></MyImage>
 
 **5.1.6 详细信息展示**
-  
+
   在**事件管理 -> 监测**页面，点击下图红色方框位置查看事件详细信息
 
   <MyImage src="/docs-img/backend/zh/backend-event-detail.png"></MyImage>
 
 **5.1.7 事件自动刷新**
-  
+
   在**事件管理 -> 监测**页面，点击下图红色方框自动刷新按钮，开启事件自动刷新（开启后将会定时自动获取最新事件，再次点击按钮关闭，或在查看事件列表时自动关闭）
 
   <MyImage src="/docs-img/backend/zh/backend-event-auto.png"></MyImage>
@@ -312,38 +312,46 @@ java -Dserver.port=8990 -jar service-b.jar
 
 > 注：动态安装插件前请确保插件的JAR包在${path}/sermant-agent-x.x.x/pluginPackage/${pluginName}下。 ${path}为sermant实际安装路径，x.x.x代表sermant某个版本号，${pluginName}为插件名称
 
-- 由于心跳上报有时间周期，插件信息并非立即刷新，需等待最新的心跳信息上报后即可查看最新的插件信息
+- 由于心跳和事件上报有时间周期，插件信息和事件并非立即刷新，需等待最新的心跳信息和事件上报后即可查看
 
 <MyImage src="/docs-img/backend/zh/plugin-install-4.png"></MyImage>
+
+<MyImage src="/docs-img/backend/zh/plugin-install-5.png"></MyImage>
 
 #### 7.2 插件升级
 
 - 在实例状态页面选择要执行热插拔服务的实例，点击`热插拔`按钮
 
-<MyImage src="/docs-img/backend/zh/plugin-install-2.png"></MyImage>
+<MyImage src="/docs-img/backend/zh/plugin-update-1.png"></MyImage>
 
 - 选择`更新插件`服务，输入插件名称即可点击`确认`按钮进行插件更新
 
-<MyImage src="/docs-img/backend/zh/plugin-update-1.png"></MyImage>
+<MyImage src="/docs-img/backend/zh/plugin-update-2.png"></MyImage>
 
 > 注：动态更新插件前请确保插件的JAR包已经被更新
 
-- 由于事件上报有时间周期，事件信息并非立即刷新，需等待最新的事件信息上报后即可查看插件更新的事件信息
-
-<MyImage src="/docs-img/backend/zh/plugin-update-2.png"></MyImage>
+- 由于心跳和事件上报有时间周期，插件信息和事件并非立即刷新，需等待最新的心跳信息和事件上报后即可查看
 
 <MyImage src="/docs-img/backend/zh/plugin-update-3.png"></MyImage>
+
+<MyImage src="/docs-img/backend/zh/plugin-update-4.png"></MyImage>
 
 #### 7.3 插件卸载
 
 - 在实例状态页面选择要执行热插拔服务的实例，点击`热插拔`按钮
 
-<MyImage src="/docs-img/backend/zh/plugin-install-2.png"></MyImage>
+<MyImage src="/docs-img/backend/zh/plugin-uninstall-1.png"></MyImage>
 
 - 选择`卸载插件`服务，输入插件名称即可点击`确认`按钮进行插件卸载
 
-<MyImage src="/docs-img/backend/zh/plugin-unInstall-1.png"></MyImage>
+<MyImage src="/docs-img/backend/zh/plugin-uninstall-2.png"></MyImage>
 
-- 由于心跳上报有时间周期，插件信息并非立即刷新，需等待最新的心跳信息上报后即可查看最新的插件信息
+- 由于心跳和事件上报有时间周期，插件信息和事件并非立即刷新，需等待最新的心跳信息和事件上报后即可查看
 
-<MyImage src="/docs-img/backend/zh/plugin-unInstall-2.png"></MyImage>
+<MyImage src="/docs-img/backend/zh/plugin-uninstall-3.png"></MyImage>
+
+<MyImage src="/docs-img/backend/zh/plugin-uninstall-4.png"></MyImage>
+
+#### 7.4 外部Agent安装
+
+参考[在Sermant中使用和管理外部JavaAgent](sermant-agent.md#操作和结果验证)。

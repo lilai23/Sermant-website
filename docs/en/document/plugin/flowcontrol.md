@@ -255,6 +255,35 @@ For details, refer to [Dynamic Configuration User Manual](../user-guide/configur
 - The `systemLoad` configuration in system rules and system adaptive rules is only limited to **linux**
 - The above [Configuring Flow Control Rules Based On The Configuration File](#Configuring Flow Control Rules Based On The Configuration File) is only applicable to **Springboot** applications
 
+## Flow Control Based on xDS Protocol
+
+The flow control plugin implements flow control based on the xDS protocol (hereinafter referred to as xDS flow control) by retrieving service flow control configurations from the xDS service at the Sermant framework layer. Users can apply flow control configurations via Istio’s [DestinationRule](https://istio.io/v1.23/docs/reference/config/networking/destination-rule/), [VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/), and [EnvoyFilter](https://istio.io/v1.23/docs/reference/config/networking/envoy-filter/). Currently, four capabilities are supported: retry, error injection, rate limiting, and circuit breaking. It supports three frameworks: HttpClient, OkHttp, and HttpURLConnection.
+
+### Using xDS Flow Control
+
+To use xDS flow control, Istio must be deployed in a Kubernetes environment, following the [Istio Getting Started Guide](https://istio.io/v1.23/docs/setup/getting-started/). Additionally, the xDS flow control switch should be enabled in the flow control plugin's `config/config.yaml` configuration file. (If you want to enable the retry functionality based on matching response status codes and response header names, you need to configure the status codes and response headers in the flow control plugin's `config/config.yaml` file, and add retry conditions `retriable-status-codes` and `retriable-headers` in the `spec.retries.retryOn` section of the [VirtualService](https://istio.io/v1.23/docs/reference/config/networking/virtual-service/)).
+
+```yaml
+xds.flow.control.config:
+  enable: true
+  x-sermant-retriable-status-codes:
+    - 503
+  x-sermant-retriable-header-names:
+    - x-local-rate-limit
+```
+
+> Microservices utilizing xDS flow control do not need to mount the Envoy proxy container when creating Pods.
+
+The URL format for HTTP client calls to upstream services should be `http://${serviceName}.${hostSuffix}/{path}`, where `${serviceName}` is the name of the upstream service, and `${hostSuffix}` is the domain suffix of Kubernetes. For the flow control configuration template provided by Istio, please refer to the section on [Flow Control Capabilities Based on xDS Service](../user-guide/sermant-xds.md#flow-control-capabilities-based-on-xds-service). For an example of using xDS flow control, please refer to the section on [xDS Based Flow Control Example](../user-guide/sermant-xds.md#example-of-flow-control-based-on-xds-service).
+
+### xDS Flow Control Supported Framework Versions and Limitations
+
+| Framework          | Supported Versions      |
+| ------------------ | ----------------------- |
+| HttpClient         | 4.x                     |
+| OkHttp             | 2.2.x - 4.x             |
+| HttpURLConnection  | 1.8                     |
+
 ## Operation and result validation
 
 The following will demonstrate how to use the flow control plugin.
