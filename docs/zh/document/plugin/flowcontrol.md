@@ -668,7 +668,7 @@ http客户端调用上游服务的URL格式需要为`http://${serviceName}.${hos
 
 ```shell
 #linux mac
-java -javaagent:${sermant-path}/agent/sermant-agent.jar -Dspring.application.name=spring-flow-provider -jar spring-provider.jar
+java -javaagent:${sermant-path}/agent/sermant-agent.jar -Dflow.control.plugin.useCseRule=false -Dspring.application.name=spring-flow-provider -jar spring-provider.jar
 ```
 
 > **说明：** ${sermant-path}为Sermant包路径。
